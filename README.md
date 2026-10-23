@@ -4,6 +4,9 @@ Lecturas breves de tarot con una baraja ilustrada. Se ejecuta en el navegador, s
 
 - Web: https://xesco-tejedor.github.io/tarot-arrels-de-corall/
 - Archivos: `index.html`, `styles.css`, `app.js` y `assets/` (cartas y tipografías).
+- Funciona sin conexión: la tirada, la síntesis y la tarjeta se generan en el dispositivo.
+- Tarjeta de la lectura: billete de oráculo con las cartas y la lectura, para descargar o compartir (se genera en el dispositivo; al compartir, cada quien elige el destino).
+- Orbes celestiales (opcional, solo con conexión): segunda interpretación por una IA externa. Se ofrece tras la lectura, avisa de qué se envía (pregunta, cartas y lectura) y a quién, y solo sale nada del dispositivo si se acepta. Se activa configurando `ORBES_CONFIG.url` en `app.js` hacia el servidor propio (Worker `tarot-orbes`); con la URL vacía no aparece.
 
 ## App para Android (APK)
 
