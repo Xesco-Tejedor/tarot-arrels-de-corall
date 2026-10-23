@@ -41,8 +41,10 @@
       <h1 class="app__title">Arrels de corall, nits de plata</h1>
       <svg class="app__branch" aria-hidden="true"><use href="#branch"/></svg>
       <p class="app__subtitle">Los 22 arcanos mayores</p>
-      <button id="sound-toggle" class="sound" type="button" aria-pressed="true">Sonido: sí</button>
-      <button id="music-toggle" class="sound sound--music" type="button" aria-pressed="true">Música: sí</button>
+      <div class="sound-row">
+        <button id="sound-toggle" class="sound" type="button" aria-pressed="true" aria-label="Sonido de las cartas" title="Sonido de las cartas"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5h3.5L12 6v12l-4.5-3.5H4z"/><path d="M15.5 9a4 4 0 0 1 0 6"/><path d="M18 6.5a8 8 0 0 1 0 11"/><line class="slash" x1="4" y1="20" x2="20" y2="4"/></svg></button>
+        <button id="music-toggle" class="sound" type="button" aria-pressed="true" aria-label="Música de fondo" title="Música de fondo"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17V6l9-2v11"/><circle cx="7" cy="17" r="2"/><circle cx="16" cy="15" r="2"/><line class="slash" x1="4" y1="20" x2="20" y2="4"/></svg></button>
+      </div>
     </header>
 
     <section id="phase-input" class="panel" aria-labelledby="form-title">
