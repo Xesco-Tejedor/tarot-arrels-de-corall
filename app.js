@@ -605,6 +605,83 @@ function initSoundToggle() {
   });
 }
 
+
+/* ---------- Música ambiente: bucle suave, con su propio interruptor ----------
+   Empieza tras el primer toque (los navegadores no permiten audio antes), con entrada gradual.
+   Se pausa con la pestaña oculta. El interruptor se recuerda y es independiente del sonido de las cartas. */
+const music = { el: null, on: true, started: false, fade: 0, loading: false };
+try { music.on = localStorage.getItem('tarot-music') !== 'off'; } catch (e) { /* sin almacenamiento */ }
+const MUSIC_VOL = 0.5;
+function musicFadeTo(target, ms, done) {
+  const a = music.el; if (!a) return;
+  clearInterval(music.fade);
+  const from = a.volume, steps = Math.max(1, Math.round(ms / 50)); let i = 0;
+  music.fade = setInterval(() => {
+    i++; a.volume = Math.min(1, Math.max(0, from + (target - from) * i / steps));
+    if (i >= steps) { clearInterval(music.fade); if (done) done(); }
+  }, 50);
+}
+function musicLoad(cb) {
+  if (music.el) return cb();
+  if (music.loading) return;
+  music.loading = true;
+  const parts = ['assets/audio/ambiente-1.js', 'assets/audio/ambiente-2.js'];
+  const next = (i) => {
+    if (i >= parts.length) {
+      try {
+        const bin = atob((window.TAROT_MUSIC_B64 || []).join('')), u8 = new Uint8Array(bin.length);
+        for (let k = 0; k < bin.length; k++) u8[k] = bin.charCodeAt(k);
+        music.el = new Audio(URL.createObjectURL(new Blob([u8], { type: 'audio/mpeg' })));
+        music.el.loop = true; music.el.volume = 0;
+        window.TAROT_MUSIC_B64 = null;
+        music.loading = false;
+        cb();
+      } catch (e) { music.loading = false; /* el audio es opcional */ }
+      return;
+    }
+    const sc = document.createElement('script');
+    sc.src = parts[i];
+    sc.onload = () => next(i + 1);
+    sc.onerror = () => { music.loading = false; };
+    document.head.appendChild(sc);
+  };
+  next(0);
+}
+function musicPlay() {
+  if (!music.on || document.hidden) return;
+  musicLoad(() => {
+    if (!music.on) return;
+    try {
+      const p = music.el.play();
+      music.started = true;
+      if (p && p.then) p.then(() => musicFadeTo(MUSIC_VOL, 2000)).catch(() => { music.started = false; });
+      else musicFadeTo(MUSIC_VOL, 2000);
+    } catch (e) { /* el audio es opcional */ }
+  });
+}
+function musicPause() {
+  if (!music.el) return;
+  musicFadeTo(0, 400, () => music.el.pause());
+}
+function initMusic() {
+  const b = document.getElementById('music-toggle');
+  const paint = () => { if (!b) return; b.setAttribute('aria-pressed', String(music.on)); b.textContent = music.on ? 'Música: sí' : 'Música: no'; };
+  paint();
+  const first = () => { document.removeEventListener('pointerdown', first, true); document.removeEventListener('keydown', first, true); if (!music.started) musicPlay(); };
+  document.addEventListener('pointerdown', first, true);
+  document.addEventListener('keydown', first, true);
+  if (b) b.addEventListener('click', () => {
+    music.on = !music.on;
+    try { localStorage.setItem('tarot-music', music.on ? 'on' : 'off'); } catch (e) { /* sin almacenamiento */ }
+    paint();
+    if (music.on) musicPlay(); else musicPause();
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) { if (music.el && !music.el.paused) { clearInterval(music.fade); music.el.pause(); } }
+    else if (music.on && music.started) musicPlay();
+  });
+}
+
 /* ---------- Pavesas: partículas que flotan en el fondo ----------
    Canvas detrás del contenido, sin eventos de puntero. Se detiene con la pestaña oculta
    y no se anima si el sistema pide reducir el movimiento. Sin dependencias ni red. */
@@ -664,6 +741,7 @@ document.addEventListener('DOMContentLoaded', () => {
   injectJsonLd();
   initEmbers();
   initSoundToggle();
+  initMusic();
   fillSpreadSelect();
   preload();
   $('#consult-form').addEventListener('submit', startConsult);
