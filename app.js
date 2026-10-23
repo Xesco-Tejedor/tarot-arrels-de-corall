@@ -322,6 +322,31 @@ const MOTIF_LABEL = {
   voz: 'la voz', oficio: 'el oficio', umbral: 'el umbral'
 };
 
+
+/* Temas que el motor reconoce por las palabras escritas (raíces léxicas) y, para cada tema,
+   qué propone cada familia de cartas. Es un motor local de reglas: no entiende frases abiertas,
+   solo reconoce estos temas; fuera de ellos usa el gesto propio de cada carta. */
+const THEMES = [
+  ['trabajo', 'el trabajo', ['trabaj', 'emple', 'carrera', 'proyect', 'negocio', 'estudi', 'oficio', 'empres', 'jefe']],
+  ['vinculo', 'esa relación', ['pareja', 'amor', 'amist', 'amig', 'famil', 'relaci', 'herman', 'padre', 'madre', 'hij']],
+  ['hogar', 'el lugar donde vives', ['hogar', 'casa', 'mudanza', 'ciudad', 'piso', 'vivir']],
+  ['dinero', 'el dinero', ['dinero', 'ahorr', 'econom', 'deuda', 'sueldo']],
+  ['creacion', 'lo que quieres crear', ['creativ', 'arte', 'escrib', 'música', 'musica', 'libro', 'pintar', 'diseñ']],
+  ['cuerpo', 'tu descanso y tu ánimo', ['salud', 'descans', 'miedo', 'ansied', 'cansanc', 'estr\u00e9s', 'estres']],
+  ['confianza', 'tu confianza', ['confianza', 'libertad', 'autoestima', 'seguridad']],
+  ['cambio', 'el cambio', ['cambio', 'futuro', 'camino', 'viaje', 'decisi', 'raíces', 'raices']]
+];
+const THEME_GRP = {
+  trabajo:  { inicio: 'empezar con algo pequeño y aún sin forma, sin exigirle ya resultados', hacer: 'poner las manos en una pieza concreta y terminarla antes de abrir otra', cuidar: 'proteger lo que ya funciona y no exponerlo antes de que esté listo', mirar: 'parar a ver con claridad qué has hecho y cuál es el siguiente paso real', ciclo: 'medir esfuerzo y descanso, y aceptar que hay épocas de más y de menos', soltar: 'dejar una tarea o un formato que ya no sostiene nada', cierre: 'completar y reunir lo hecho en lugar de seguir añadiendo' },
+  vinculo:  { inicio: 'dejar que algo empiece sin exigirle ya un nombre', hacer: 'decir con claridad algo propio y dar un gesto concreto', cuidar: 'cuidar sin encerrar: dar refugio y respetar el espacio del otro', mirar: 'mirar con calma lo que de verdad hay entre vosotros', ciclo: 'pesar lo que das y lo que recibes, con firmeza y con ternura', soltar: 'soltar un peso o un papel que ya no os corresponde', cierre: 'reconocer qué de lo vuestro es sólido y se completa' },
+  hogar:    { inicio: 'tratar el lugar como algo por nacer, sin llenarlo de prisa', hacer: 'hacer el sitio tuyo con cosas pequeñas y manuales', cuidar: 'buscar un refugio donde sentirte a salvo antes de decidir más', mirar: 'ver con claridad qué necesitas de un sitio antes de elegirlo', ciclo: 'aceptar que una etapa del lugar gira y pesar qué se queda', soltar: 'dejar lo que ya no cabe en este sitio', cierre: 'reconocer qué te sostiene de donde vienes y si te basta' },
+  dinero:   { inicio: 'empezar con una base pequeña y proteger lo poco que ya hay', hacer: 'dar un paso material concreto en lugar de seguir dándole vueltas', cuidar: 'proteger lo que tienes y no arriesgarlo por prisa', mirar: 'ver las cifras reales con claridad antes de decidir', ciclo: 'pesar con medida ingresos y gastos, sin dramatizar', soltar: 'dejar un gasto o una carga que ya no se justifica', cierre: 'asentar una base sólida y completar lo que ya sostienes' },
+  creacion: { inicio: 'cuidar la idea todavía en reposo, sin forzarla a nacer', hacer: 'decir o mostrar algo propio, por pequeño que sea', cuidar: 'darle refugio y tiempo a lo que haces antes de enseñarlo', mirar: 'ver con claridad qué de tu obra ya está vivo', ciclo: 'aceptar que crear va por temporadas', soltar: 'dejar una forma que ya no te sirve para que salga lo que contenía', cierre: 'terminar la pieza y reunirla en un todo' },
+  cuerpo:   { inicio: 'tratarte como algo frágil que empieza, sin exigirte ya', hacer: 'hacer un gesto pequeño y concreto de cuidado', cuidar: 'darte amparo sin encerrarte', mirar: 'bajar el ruido y mirar con calma qué necesitas', ciclo: 'medir el ritmo, con menos miedo y más medida', soltar: 'dejar caer un peso que quizá no es tuyo, como una pluma', cierre: 'reconocer lo que ya te sostiene y descansar en ello' },
+  confianza:{ inicio: 'responder a lo que te llama, aunque aún sea frágil', hacer: 'decir con claridad una verdad pequeña', cuidar: 'proteger tu confianza sin encerrarla', mirar: 'sostener una esperanza quieta y suficiente', ciclo: 'pesar con firmeza y con ternura, y nombrar el miedo para soltarlo', soltar: 'soltar las voces ajenas que pesan', cierre: 'apoyarte en lo que ya te sostiene' },
+  cambio:   { inicio: 'dar el primer paso aunque no se vea el resto del camino', hacer: 'elegir un rumbo y sostenerlo aunque algo tire hacia otro', cuidar: 'esperar a que la puerta esté lista y no forzarla', mirar: 'dar solo el próximo paso, con la luz que ya tienes', ciclo: 'aceptar el giro y empezar a hilar lo que viene', soltar: 'dejar que algo termine para que salga lo que contenía', cierre: 'cerrar bien una vuelta antes de abrir la siguiente' }
+};
+
 /* Tipo y tema de la pregunta, solo a partir de las palabras escritas. */
 function analyseQuery(q) {
   const t = ' ' + q.toLowerCase().replace(/[¿?¡!.,;:()«»"]/g, ' ') + ' ';
@@ -331,12 +356,14 @@ function analyseQuery(q) {
   else if (/\b(c[oó]mo|de qu[eé] manera|qu[eé] puedo hacer)\b/.test(t)) type = 'how';
   else if (/\b(deber[ií]a|conviene|merece la pena|decidir|elegir|aceptar|quedarme|irme|tengo que decidir)\b/.test(t) || /\bo\b.*\bno\b/.test(t)) type = 'decision';
   else if (/\b(qu[eé]|cu[aá]l|cu[aá]les|qui[eé]n)\b/.test(t)) type = 'what';
-  const lex = ['trabaj', 'emple', 'carrera', 'proyect', 'negocio', 'estudi', 'oficio', 'pareja', 'amor', 'amist', 'amig', 'famil',
-    'relaci', 'hogar', 'casa', 'mudanza', 'cambio', 'futuro', 'dinero', 'ahorr', 'creativ', 'arte', 'escrib', 'música', 'musica',
-    'salud', 'descans', 'miedo', 'decisi', 'raíces', 'raices', 'camino', 'viaje', 'libertad', 'confianza', 'ciudad', 'casa'];
   const words = t.trim().split(/\s+/);
-  const kw = words.find(w => w.length > 3 && lex.some(x => w.indexOf(x) === 0)) || '';
-  return { type, kw };
+  let theme = '', kw = '';
+  for (const w of words) {
+    if (w.length < 4) continue;
+    const th = THEMES.find(x => x[2].some(p => w.indexOf(p) === 0));
+    if (th) { theme = th[0]; kw = w; break; }
+  }
+  return { type, kw, theme };
 }
 function hashSeed(str) { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
 function pick(arr, seed) { return arr[seed % arr.length]; }
@@ -346,8 +373,9 @@ function cardLabel(c) { return `«${c.name}» (${c.identifier}, ${c.alternateNam
 function localInterpretation(prompt, cardContext) {
   const n = cardContext.length;
   const seed = hashSeed(prompt + '|' + cardContext.map(c => c.identifier).join(','));
-  const { type, kw } = analyseQuery(prompt);
-  const ctx = kw ? `lo que preguntas sobre «${kw}»` : 'lo que preguntas';
+  const { type, kw, theme } = analyseQuery(prompt);
+  const thLabel = (THEMES.find(x => x[0] === theme) || [])[1];
+  const ctx = thLabel ? `lo que preguntas sobre ${thLabel}` : 'lo que preguntas';
   const cards = cardContext.map(c => Object.assign({}, c, CARD_READING[c.identifier] || { grp: 'mirar', mot: [], g: 'mirar la imagen con calma', core: firstSentence(c.description), ask: '¿Qué te dice esta imagen sobre lo que preguntas?' }));
   const paras = [];
 
@@ -363,7 +391,7 @@ function localInterpretation(prompt, cardContext) {
     what:     [`Tu pregunta busca una respuesta concreta. Leeré ${unit}, cada una como una respuesta parcial.`],
     open:     [`Tu consulta es abierta. Leeré ${unit} sobre ella.`]
   };
-  const kwNote = kw ? ` Parto de la palabra «${kw}» que aparece en lo que escribiste, sin suponer nada más sobre tu situación.` : '';
+  const kwNote = '';
   paras.push(`Tu consulta: «${prompt}».`);
   paras.push(pick(frames[type], seed) + kwNote);
 
@@ -403,25 +431,33 @@ function localInterpretation(prompt, cardContext) {
     paras.push(rel.join(' '));
   }
 
-  /* 4. Cierre */
-  const first = cards[0], last = cards[n - 1];
-  let closing;
+  /* 4. Respuesta a la pregunta: qué propone cada carta para el tema y qué se desprende según el tipo de pregunta */
+  const th = THEMES.find(x => x[0] === theme);
+  const used = {};
+  const ges = cards.map(c => {
+    const f = theme && THEME_GRP[theme][c.grp];
+    if (f && !used[f]) { used[f] = 1; return f; }
+    return c.g;
+  });
+  const first = cards[0];
+  const named = (c, g) => `«${c.name}» ${g}`;
+  let ans;
   if (n === 1) {
-    closing = `Si te llevas una sola idea ${kw ? `para lo que preguntas sobre «${kw}»` : 'para lo que preguntas'}, que sea esta: ${first.g}.`;
+    ans = `${th ? 'Sobre ' + th[1] : 'Para lo que preguntas'}, ${named(first, 'apunta a ' + ges[0])}.`;
   } else {
-    const path = `primero ${cards[0].g}, después ${cards[1].g}` + (n > 2 ? `, y por último ${cards[n - 1].g}` : '');
-    const endings = {
-      decision: `Ninguna carta dice «sí» o «no». Ante tu decisión, fíjate en qué opción se parece más a lo que propone la Copa (${last.g}) y cuál a lo que ya sostiene la Raíz (${first.g}).`,
-      how: `Un camino posible, en orden: ${path}.`,
-      why: `Si buscas una causa, mira la distancia entre ${first.role} y ${last.role}: de ${first.g} a ${last.g}. Ahí puede estar lo que se mueve.`,
-      when: `No hay fecha en estas cartas, solo un orden: ${path}. El momento llega cuando el paso anterior está hecho.`,
-      what: `Si junto las respuestas en una: ${path}.`,
-      open: `Leídas en conjunto, el recorrido es este: ${path}.`
-    };
-    closing = endings[type] + (type === 'why' ? ` Un paso pequeño: ${last.g}.` : '');
+    const who = [`la base (${cards[0].name})`, `el presente (${cards[1].name})`, `lo que se abre (${cards[n - 1].name})`];
+    ans = `${th ? 'Sobre ' + th[1] : 'Para lo que preguntas'}: ${who[0]} apunta a ${ges[0]}; ${who[1]}, a ${ges[1]}; y ${who[2]}, a ${ges[n - 1]}.`;
   }
-  paras.push(closing);
-  paras.push('Es una lectura simbólica a partir de los textos de la baraja y de las palabras que escribiste. No predice ni sabe nada de ti más allá de eso: úsala como invitación a pensar.');
+  const g0 = ges[0], gm = ges[Math.floor((n - 1) / 2)], gl = ges[n - 1];
+  const tails = {
+    decision: n === 1 ? 'Ni sí ni no: es una inclinación, no un veredicto.' : `Ni sí ni no: las cartas inclinan hacia la opción que permita ${gl}, tras ${gm}.`,
+    how: n === 1 ? 'Ese es el primer paso.' : `Por dónde empezar: ${gm}.`,
+    why: n === 1 ? 'Ese es el punto que la carta propone mover.' : `El punto que las cartas proponen mover está en el presente: ${gm}.`,
+    when: n === 1 ? 'No hay fecha: el momento llega cuando eso esté hecho.' : 'No hay fecha, hay orden: base, presente y lo que se abre, y cada paso llega cuando el anterior está hecho.',
+    what: n === 1 ? '' : `Si te quedas con una sola idea: ${gm}.`,
+    open: n === 1 ? '' : `Si te quedas con una sola idea: ${gm}.`
+  };
+  paras.push((ans + ' ' + tails[type]).trim());
   return { paragraphs: paras };
 }
 
