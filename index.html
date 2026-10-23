@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Arrels de corall, nits de plata · Tarot</title>
+  <meta name="description" content="Consulta de tarot con los 22 arcanos mayores de la baraja artística Arrels de corall, nits de plata. Funciona sin conexión.">
+  <meta name="theme-color" content="#1b211d">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="app">
+    <header class="app__header">
+      <h1 class="app__title">Arrels de corall, nits de plata</h1>
+      <p class="app__subtitle">Los 22 arcanos mayores</p>
+    </header>
+
+    <section id="phase-input" class="panel" aria-labelledby="form-title">
+      <h2 id="form-title" class="panel__title">¿Qué quieres preguntar?</h2>
+      <form id="consult-form" class="form" novalidate>
+        <label class="form__label" for="query">Tu pregunta o tema de consulta</label>
+        <textarea id="query" class="form__field" rows="3" maxlength="300" placeholder="Escribe aquí con calma…"></textarea>
+        <p id="query-error" class="form__error" role="alert" hidden>Escribe una pregunta antes de consultar.</p>
+
+        <label class="form__label" for="spread">Tipo de tirada</label>
+        <select id="spread" class="form__field"></select>
+
+        <button type="submit" class="button">Barajar y Consultar</button>
+      </form>
+      <p class="note">Las lecturas se generan en tu dispositivo. Tu pregunta no se envía a ningún sitio.</p>
+    </section>
+
+    <section id="phase-reading" class="reading" aria-live="polite" hidden>
+      <p id="reading-query" class="reading__query"></p>
+      <div id="tarot-mat" class="mat" aria-label="Tapete de tarot"></div>
+      <p id="reading-hint" class="reading__hint"></p>
+      <section id="synthesis" class="synthesis" hidden>
+        <h2 class="synthesis__title">Síntesis de la lectura</h2>
+        <div id="synthesis-text" class="synthesis__text"></div>
+      </section>
+      <button id="reset" type="button" class="button button--ghost" hidden>Nueva consulta</button>
+    </section>
+
+    <footer class="app__footer">
+      <p>Lecturas breves inspiradas en las imágenes de la baraja. Son una invitación a reflexionar, no una predicción.</p>
+    </footer>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>
