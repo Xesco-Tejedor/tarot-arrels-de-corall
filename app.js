@@ -583,6 +583,38 @@ function reset() {
    al primer toque del usuario, como exigen los navegadores móviles. Se puede silenciar. */
 const sound = { ctx: null, buf: null, on: true };
 try { sound.on = localStorage.getItem('tarot-sound') !== 'off'; } catch (e) { /* sin almacenamiento */ }
+/* Roce largo y apagado: ruido marrón (sin agudos), ataque lento, textura de fibras y cola suave. Sin golpe inicial. */
+function makeFeltNoise(ctx) {
+  const len = Math.floor(ctx.sampleRate * 1.2);
+  const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+  const d = buf.getChannelData(0);
+  let last = 0;
+  for (let i = 0; i < len; i++) { last = (last + 0.04 * (Math.random() * 2 - 1)) / 1.04; d[i] = last * 3.5; }
+  return buf;
+}
+function scheduleSlide(ctx, dest, t, noiseBuf) {
+  const dur = 0.85;
+  const src = ctx.createBufferSource(); src.buffer = noiseBuf;
+  const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 120;
+  const band = ctx.createBiquadFilter(); band.type = 'bandpass'; band.Q.value = 0.6;
+  band.frequency.setValueAtTime(380, t);
+  band.frequency.linearRampToValueAtTime(900, t + dur * 0.45);
+  band.frequency.linearRampToValueAtTime(520, t + dur);
+  const low = ctx.createBiquadFilter(); low.type = 'lowpass'; low.frequency.value = 1500;
+  /* textura: modulación suave de la amplitud, como fibras de fieltro rozando */
+  const tex = ctx.createGain(); tex.gain.value = 0.8;
+  const lfo = ctx.createOscillator(); lfo.type = 'triangle'; lfo.frequency.value = 23;
+  const lfoDepth = ctx.createGain(); lfoDepth.gain.value = 0.18;
+  lfo.connect(lfoDepth); lfoDepth.connect(tex.gain);
+  const env = ctx.createGain();
+  env.gain.setValueAtTime(0, t);
+  env.gain.linearRampToValueAtTime(0.08, t + 0.12);
+  env.gain.linearRampToValueAtTime(0.26, t + 0.34);
+  env.gain.linearRampToValueAtTime(0.16, t + 0.58);
+  env.gain.linearRampToValueAtTime(0, t + dur);
+  src.connect(hp); hp.connect(band); band.connect(low); low.connect(tex); tex.connect(env); env.connect(dest);
+  src.start(t, Math.random() * 0.3, dur + 0.05); lfo.start(t); lfo.stop(t + dur + 0.05);
+}
 function playCardSound() {
   if (!sound.on) return;
   const AC = window.AudioContext || window.webkitAudioContext;
@@ -591,24 +623,8 @@ function playCardSound() {
     if (!sound.ctx) sound.ctx = new AC();
     const ctx = sound.ctx;
     if (ctx.state === 'suspended') ctx.resume();
-    if (!sound.buf) {
-      sound.buf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.5), ctx.sampleRate);
-      const d = sound.buf.getChannelData(0);
-      let last = 0;
-      for (let i = 0; i < d.length; i++) { last = last * 0.6 + (Math.random() * 2 - 1) * 0.4; d[i] = last; }
-    }
-    const t = ctx.currentTime, dur = 0.34;
-    const src = ctx.createBufferSource(); src.buffer = sound.buf;
-    const band = ctx.createBiquadFilter(); band.type = 'bandpass'; band.Q.value = 0.7;
-    band.frequency.setValueAtTime(2200, t); band.frequency.exponentialRampToValueAtTime(650, t + dur);
-    const low = ctx.createBiquadFilter(); low.type = 'lowpass'; low.frequency.value = 3200;
-    const g = ctx.createGain();
-    g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime(0.24, t + 0.03);
-    g.gain.exponentialRampToValueAtTime(0.07, t + 0.16);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    src.connect(band); band.connect(low); low.connect(g); g.connect(ctx.destination);
-    src.start(t, Math.random() * 0.1, dur + 0.05);
+    if (!sound.buf) sound.buf = makeFeltNoise(ctx);
+    scheduleSlide(ctx, ctx.destination, ctx.currentTime + 0.01, sound.buf);
   } catch (e) { /* el audio es opcional */ }
 }
 function initSoundToggle() {
