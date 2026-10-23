@@ -536,6 +536,7 @@ function buildSlot(pos, card, index) {
   button.addEventListener('click', () => {
     if (button.classList.contains('is-flipped')) return;
     button.classList.add('is-flipped');
+    playCardSound();
     button.setAttribute('aria-label', `${card.name}, ${card.alternateName}`);
     info.appendChild(el('p', 'slot__number', card.identifier));
     info.appendChild(el('h3', 'slot__name', card.name));
@@ -577,8 +578,111 @@ function reset() {
   $('#query').focus();
 }
 
+/* ---------- Sonido: roce suave de cartón sobre tela ----------
+   Se sintetiza con Web Audio (ruido filtrado), sin archivos ni red. El contexto se crea
+   al primer toque del usuario, como exigen los navegadores móviles. Se puede silenciar. */
+const sound = { ctx: null, buf: null, on: true };
+try { sound.on = localStorage.getItem('tarot-sound') !== 'off'; } catch (e) { /* sin almacenamiento */ }
+function playCardSound() {
+  if (!sound.on) return;
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) return;
+  try {
+    if (!sound.ctx) sound.ctx = new AC();
+    const ctx = sound.ctx;
+    if (ctx.state === 'suspended') ctx.resume();
+    if (!sound.buf) {
+      sound.buf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.5), ctx.sampleRate);
+      const d = sound.buf.getChannelData(0);
+      let last = 0;
+      for (let i = 0; i < d.length; i++) { last = last * 0.6 + (Math.random() * 2 - 1) * 0.4; d[i] = last; }
+    }
+    const t = ctx.currentTime, dur = 0.34;
+    const src = ctx.createBufferSource(); src.buffer = sound.buf;
+    const band = ctx.createBiquadFilter(); band.type = 'bandpass'; band.Q.value = 0.7;
+    band.frequency.setValueAtTime(2200, t); band.frequency.exponentialRampToValueAtTime(650, t + dur);
+    const low = ctx.createBiquadFilter(); low.type = 'lowpass'; low.frequency.value = 3200;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.24, t + 0.03);
+    g.gain.exponentialRampToValueAtTime(0.07, t + 0.16);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    src.connect(band); band.connect(low); low.connect(g); g.connect(ctx.destination);
+    src.start(t, Math.random() * 0.1, dur + 0.05);
+  } catch (e) { /* el audio es opcional */ }
+}
+function initSoundToggle() {
+  const b = document.getElementById('sound-toggle');
+  if (!b) return;
+  const paint = () => { b.setAttribute('aria-pressed', String(sound.on)); b.textContent = sound.on ? 'Sonido: sí' : 'Sonido: no'; };
+  paint();
+  b.addEventListener('click', () => {
+    sound.on = !sound.on;
+    try { localStorage.setItem('tarot-sound', sound.on ? 'on' : 'off'); } catch (e) { /* sin almacenamiento */ }
+    paint();
+    if (sound.on) playCardSound();
+  });
+}
+
+/* ---------- Pavesas: partículas que flotan en el fondo ----------
+   Canvas detrás del contenido, sin eventos de puntero. Se detiene con la pestaña oculta
+   y no se anima si el sistema pide reducir el movimiento. Sin dependencias ni red. */
+function initEmbers() {
+  const canvas = document.getElementById('embers');
+  if (!canvas || !canvas.getContext) return;
+  const ctx = canvas.getContext('2d');
+  const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduce) { canvas.hidden = true; return; }
+  const small = Math.min(window.innerWidth, window.innerHeight) < 700;
+  const COUNT = small ? 34 : 48;
+  const COLORS = ['217,143,120', '234,223,194', '201,160,110'];
+  let w = 0, h = 0, dpr = 1, raf = 0, last = 0;
+  const rnd = (a, b) => a + Math.random() * (b - a);
+  const make = (fromBottom) => ({
+    x: rnd(0, w), y: fromBottom ? h + rnd(0, 40) : rnd(0, h),
+    r: rnd(1.3, 3.2), vy: rnd(8, 22), sway: rnd(8, 26), ph: rnd(0, 6.28), fr: rnd(0.25, 0.7),
+    a: rnd(0.6, 1), c: COLORS[Math.floor(Math.random() * COLORS.length)], tw: rnd(0.6, 1.6)
+  });
+  let parts = [];
+  function resize() {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    w = window.innerWidth; h = window.innerHeight;
+    canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    if (!parts.length) parts = Array.from({ length: COUNT }, () => make(false));
+  }
+  function frame(t) {
+    const dt = Math.min((t - last) / 1000 || 0, 0.05); last = t;
+    ctx.clearRect(0, 0, w, h);
+    for (const p of parts) {
+      p.y -= p.vy * dt;
+      p.ph += p.fr * dt;
+      const x = p.x + Math.sin(p.ph) * p.sway;
+      if (p.y < -10) Object.assign(p, make(true));
+      const fade = Math.min(1, Math.max(0, p.y / (h * 0.25)), (h - p.y) / 60 + 0.2);
+      const flick = 0.65 + 0.35 * Math.sin(t / 1000 * p.tw + p.ph * 3);
+      const alpha = p.a * fade * flick;
+      const g = ctx.createRadialGradient(x, p.y, 0, x, p.y, p.r * 4);
+      g.addColorStop(0, `rgba(${p.c},${alpha})`);
+      g.addColorStop(0.3, `rgba(${p.c},${alpha * 0.7})`);
+      g.addColorStop(1, `rgba(${p.c},0)`);
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(x, p.y, p.r * 4, 0, 6.2832); ctx.fill();
+    }
+    raf = requestAnimationFrame(frame);
+  }
+  function start() { if (!raf) { last = performance.now(); raf = requestAnimationFrame(frame); } }
+  function stop() { if (raf) { cancelAnimationFrame(raf); raf = 0; } }
+  resize();
+  window.addEventListener('resize', resize);
+  document.addEventListener('visibilitychange', () => (document.hidden ? stop() : start()));
+  start();
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   injectJsonLd();
+  initEmbers();
+  initSoundToggle();
   fillSpreadSelect();
   preload();
   $('#consult-form').addEventListener('submit', startConsult);
