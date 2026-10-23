@@ -2,18 +2,28 @@ name: organize
 on:
   push:
     branches: [main]
-    paths: ['fell-*.woff2']
+    paths: ['.github/workflows/organize.yml']
 permissions:
   contents: write
 jobs:
-  move:
+  fonts:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - run: |
-          mkdir -p assets/fonts
-          git mv fell-*.woff2 OFL-IM-Fell.txt assets/fonts/
+          pip install fonttools brotli
+          B=https://raw.githubusercontent.com/google/fonts/main/ofl
+          mkdir -p assets/fonts /tmp/ttf
+          curl -fsSL -o /tmp/ttf/title.ttf $B/imfelldoublepica/IMFELLDoublePica-Regular.ttf
+          curl -fsSL -o /tmp/ttf/regular.ttf $B/imfellenglish/IMFeENrm28P.ttf
+          curl -fsSL -o /tmp/ttf/italic.ttf $B/imfellenglish/IMFeENit28P.ttf
+          curl -fsSL -o /tmp/ttf/sc.ttf $B/imfellenglishsc/IMFeENsc28P.ttf
+          curl -fsSL -o assets/fonts/OFL-IM-Fell.txt $B/imfellenglish/OFL.txt
+          for n in title regular italic sc; do
+            pyftsubset /tmp/ttf/$n.ttf --unicodes="U+0020-007E,U+00A0-00FF,U+0152-0153,U+2013-2014,U+2018-201D,U+2026,U+2022,U+00B7,U+0131" --layout-features='*' --flavor=woff2 --output-file=assets/fonts/fell-$n.woff2
+          done
           git config user.name "github-actions"
           git config user.email "actions@github.com"
-          git commit -m "Mover tipografias a assets/fonts"
+          git add assets/fonts
+          git commit -m "Anadir tipografias IM Fell (OFL) en assets/fonts"
           git push
