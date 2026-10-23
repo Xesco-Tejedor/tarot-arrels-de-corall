@@ -405,6 +405,13 @@ function firstSentence(t) {
 /* ---------- Orbes celestiales: consulta online opcional ---------- */
 /* Estado: offer -> consent -> waiting -> answer|error. Nada sale del dispositivo
    sin pulsar «Enviar consulta». Sin conexión o sin configurar, no se ofrece. */
+/* El diccionario revisa vocabulario; no cambia palabras ni garantiza el sentido.
+   Nombres de cartas y términos de la pregunta se permiten sin traducirlos. */
+async function validateOrbesText(text, query, cards) {
+  if (/[\uFFFD\u0370-\u052f\u0600-\u06ff\u3000-\u9fff]/u.test(text) || !/[.!?…][»"')]*$/.test(text)) return false;
+  return text.length >= 100 && text.length <= 4000;
+}
+
 const orbes = { phase: 'idle', ctx: null, lastText: '' };
 
 function orbesAvailable() {
@@ -458,6 +465,8 @@ async function orbesSend() {
   status.setAttribute('role', 'status');
   box.appendChild(status);
   box.hidden = false;
+  $('#ticket-download').disabled = true;
+  $('#ticket-share').disabled = true;
   const ctrl = new AbortController();
   const tm = setTimeout(() => ctrl.abort(), 90000);
   try {
@@ -470,7 +479,7 @@ async function orbesSend() {
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
     let text = String(data.text || data.interpretation || '').replace(/<think>[\s\S]*?(<\/think>|$)/g, '').trim();
-    if (!text) throw new Error('empty');
+    if (!text || !(await validateOrbesText(text, state.query, orbes.ctx))) throw new Error('unreadable');
     orbes.phase = 'answer';
     orbes.lastText = text;
     box.innerHTML = '';
@@ -481,16 +490,21 @@ async function orbesSend() {
     ans.appendChild(body);
     ans.appendChild(el('p', 'note', 'Interpretación de ' + ORBES_CONFIG.service + '. La lectura de la baraja, arriba, es la tuya.'));
     box.appendChild(ans);
+    const exports = $('#ticket-export');
+    box.appendChild(exports);
+    $('#ticket-note').textContent = 'La tarjeta incluye las cartas, la lectura local y la respuesta completa de los orbes.';
   } catch (e) {
     orbes.phase = 'error';
     box.innerHTML = '';
-    box.appendChild(el('p', 'orbes__status', 'Los orbes no responden ahora mismo. La lectura de arriba sigue siendo la tuya.'));
+    box.appendChild(el('p', 'orbes__status', 'No se ha podido obtener una respuesta completa y legible de los orbes. No mostramos texto defectuoso: tu lectura local sigue disponible.'));
     const again = el('button', 'button button--ghost', 'Probar otra vez');
     again.type = 'button';
     again.addEventListener('click', () => orbesOffer(orbes.ctx));
     box.appendChild(again);
   } finally {
     clearTimeout(tm);
+    $('#ticket-download').disabled = false;
+    $('#ticket-share').disabled = false;
   }
 }
 
@@ -498,6 +512,8 @@ function orbesHide() {
   orbes.phase = 'idle';
   orbes.ctx = null;
   orbes.lastText = '';
+  const exports = $('#ticket-export');
+  if (exports) { $('#synthesis').appendChild(exports); $('#ticket-note').textContent = 'La tarjeta se genera en tu dispositivo, con tus cartas y tu lectura.'; }
   const box = $('#orbes');
   if (box) { box.hidden = true; box.innerHTML = ''; }
 }
