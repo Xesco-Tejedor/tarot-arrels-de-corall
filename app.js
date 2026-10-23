@@ -215,8 +215,14 @@ const SPREADS = {
 };
 const DEFAULT_SPREAD = 'three';
 
-/* Configuración opcional del motor externo. Vacío = 100% offline. */
-const ENGINE_CONFIG = { url: '', apiKey: '' };
+/* Consulta opcional a los «orbes celestiales»: una segunda interpretación que
+   ofrece una IA externa, SOLO si hay conexión y la persona lo pide expresamente.
+   Con url vacía la web es 100% offline y no se muestra la opción. */
+const ORBES_CONFIG = {
+  url: 'https://tarot-orbes.francesc-adria-perello.workers.dev',
+  service: 'DeepSeek, una IA externa, a través del servidor de esta web',
+  privacy: 'El servicio procesa la consulta al momento, sin guardarla ni usarla para entrenar modelos.'
+};
 
 /* ---------- JSON-LD en <head> ---------- */
 function injectJsonLd() {
@@ -396,32 +402,395 @@ function firstSentence(t) {
   return m ? m[0].trim() : t;
 }
 
-/* Si hay URL (y opcionalmente API key) válida, sobreescribe o extiende la lectura local.
-   Si no, o si falla, devuelve la lectura local. No envía nada sin configuración explícita. */
-async function fetchInterpretationEngine(prompt, cardContext) {
-  const local = localInterpretation(prompt, cardContext);
-  const url = (ENGINE_CONFIG.url || '').trim();
-  if (!/^https:\/\//i.test(url)) return local;
+/* ---------- Orbes celestiales: consulta online opcional ---------- */
+/* Estado: offer -> consent -> waiting -> answer|error. Nada sale del dispositivo
+   sin pulsar «Enviar consulta». Sin conexión o sin configurar, no se ofrece. */
+const orbes = { phase: 'idle', ctx: null, lastText: '' };
+
+function orbesAvailable() {
+  return /^https:\/\//i.test((ORBES_CONFIG.url || '').trim()) && navigator.onLine;
+}
+
+function orbesOffer(ctx) {
+  orbes.ctx = ctx;
+  orbes.phase = 'offer';
+  const box = $('#orbes');
+  box.innerHTML = '';
+  if (!orbesAvailable()) { box.hidden = true; return; }
+  const ask = el('button', 'button button--ghost', 'Consultar los orbes celestiales');
+  ask.id = 'orbes-ask';
+  ask.type = 'button';
+  const note = el('p', 'note', 'Hay conexión: puedes pedir una segunda interpretación a ' + ORBES_CONFIG.service + '. Tu pregunta y tus cartas solo salen de tu dispositivo si lo pides.');
+  ask.addEventListener('click', orbesConsent);
+  box.appendChild(ask);
+  box.appendChild(note);
+  box.hidden = false;
+}
+
+function orbesConsent() {
+  if (orbes.phase !== 'offer') return;
+  orbes.phase = 'consent';
+  const box = $('#orbes');
+  box.innerHTML = '';
+  const panel = el('div', 'orbes__consent');
+  panel.appendChild(el('p', null, 'Se enviará tu pregunta, las cartas con su posición y la lectura local a ' + ORBES_CONFIG.service + ', solo para esta segunda interpretación. ' + ORBES_CONFIG.privacy.replace(/[.\s]+$/, '') + '.'));
+  const actions = el('div', 'orbes__actions');
+  const ok = el('button', 'button', 'Enviar consulta');
+  ok.type = 'button';
+  const no = el('button', 'button button--ghost', 'Ahora no');
+  no.type = 'button';
+  ok.addEventListener('click', orbesSend);
+  no.addEventListener('click', () => orbesOffer(orbes.ctx));
+  actions.appendChild(ok);
+  actions.appendChild(no);
+  panel.appendChild(actions);
+  box.appendChild(panel);
+  box.hidden = false;
+  ok.focus();
+}
+
+async function orbesSend() {
+  if (orbes.phase !== 'consent' || !orbes.ctx) return;
+  orbes.phase = 'waiting';
+  const box = $('#orbes');
+  box.innerHTML = '';
+  const status = el('p', 'orbes__status', 'Consultando los orbes…');
+  status.setAttribute('role', 'status');
+  box.appendChild(status);
+  box.hidden = false;
+  const ctrl = new AbortController();
+  const tm = setTimeout(() => ctrl.abort(), 90000);
   try {
-    const headers = { 'Content-Type': 'application/json' };
-    if (ENGINE_CONFIG.apiKey) headers.Authorization = 'Bearer ' + ENGINE_CONFIG.apiKey;
-    const res = await fetch(url, {
-      method: 'POST', headers,
-      body: JSON.stringify({ prompt, cards: cardContext, local })
+    const res = await fetch(ORBES_CONFIG.url.trim(), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt: state.query, cards: orbes.ctx, local: localInterpretation(state.query, orbes.ctx).paragraphs }),
+      signal: ctrl.signal
     });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
-    const text = data.interpretation || data.text;
-    if (!text) return local;
-    const extra = String(text).split(/\n+/).filter(Boolean);
-    return data.replace ? { paragraphs: extra } : { paragraphs: local.paragraphs.concat(extra) };
+    let text = String(data.text || data.interpretation || '').replace(/<think>[\s\S]*?(<\/think>|$)/g, '').trim();
+    if (!text) throw new Error('empty');
+    orbes.phase = 'answer';
+    orbes.lastText = text;
+    box.innerHTML = '';
+    const ans = el('div', 'synthesis orbes__answer');
+    ans.appendChild(el('h2', 'synthesis__title', 'Respuesta de los orbes'));
+    const body = el('div', 'synthesis__text');
+    text.split(/\n+/).filter(Boolean).forEach(p => body.appendChild(el('p', null, p)));
+    ans.appendChild(body);
+    ans.appendChild(el('p', 'note', 'Interpretación de ' + ORBES_CONFIG.service + '. La lectura de la baraja, arriba, es la tuya.'));
+    box.appendChild(ans);
   } catch (e) {
-    return local;
+    orbes.phase = 'error';
+    box.innerHTML = '';
+    box.appendChild(el('p', 'orbes__status', 'Los orbes no responden ahora mismo. La lectura de arriba sigue siendo la tuya.'));
+    const again = el('button', 'button button--ghost', 'Probar otra vez');
+    again.type = 'button';
+    again.addEventListener('click', () => orbesOffer(orbes.ctx));
+    box.appendChild(again);
+  } finally {
+    clearTimeout(tm);
   }
 }
 
+function orbesHide() {
+  orbes.phase = 'idle';
+  orbes.ctx = null;
+  orbes.lastText = '';
+  const box = $('#orbes');
+  if (box) { box.hidden = true; box.innerHTML = ''; }
+}
+
+function orbesSync() {
+  /* Si se va la conexión antes de responder, se retira la oferta; una respuesta ya dada se queda. */
+  if (!orbesAvailable() && (orbes.phase === 'offer' || orbes.phase === 'consent')) orbesHide();
+}
+
+function orbesInit() {
+  window.addEventListener('online', () => { if (orbes.phase === 'idle' && orbes.ctx) orbesOffer(orbes.ctx); });
+  window.addEventListener('offline', orbesSync);
+}
+
+
+/* ---------- Tarjeta de la lectura (billete de oráculo) ---------- */
+/* Se genera en el dispositivo con las ilustraciones de la baraja: no sale nada.
+   «Compartir» usa la función nativa del dispositivo; la persona elige el destino. */
+const TKT = { W: 1080, pad: 78, ink: '#33261a', soft: '#66543e', coral: '#a9503b', coralt: '#d98f78', paper: '#e6d9b8', paper2: '#d9c8a0', edge: '#b59f73' };
+
+function tktWrap(ctx, text, maxW) {
+  const words = String(text).split(/\s+/);
+  const lines = [];
+  let line = '';
+  for (const w of words) {
+    const t = line ? line + ' ' + w : w;
+    if (ctx.measureText(t).width > maxW && line) { lines.push(line); line = w; }
+    else line = t;
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+
+function tktFlourish(ctx, cx, y, w, color) {
+  ctx.save();
+  ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = 2;
+  const h = w / 2;
+  for (const s of [-1, 1]) {
+    ctx.beginPath();
+    ctx.moveTo(cx, y);
+    ctx.bezierCurveTo(cx + s * h * 0.3, y - 16, cx + s * h * 0.7, y + 16, cx + s * h, y);
+    ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx + s * h, y, 3.4, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx + s * h * 0.52, y + (s < 0 ? -10 : 10), 2.4, 0, 7); ctx.fill();
+  }
+  ctx.beginPath(); ctx.moveTo(cx, y - 12); ctx.lineTo(cx, y + 12); ctx.stroke();
+  ctx.beginPath(); ctx.arc(cx, y - 14, 3, 0, 7); ctx.fill();
+  ctx.beginPath(); ctx.arc(cx, y + 14, 3, 0, 7); ctx.fill();
+  ctx.restore();
+}
+
+function tktGrain(ctx, W, H, seed) {
+  let s = seed || 7;
+  const rnd = () => (s = (s * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
+  ctx.save();
+  for (let i = 0; i < 1600; i++) {
+    const a = rnd() * 0.05;
+    ctx.fillStyle = rnd() < 0.5 ? `rgba(51,38,26,${a})` : `rgba(255,246,220,${a})`;
+    ctx.fillRect(rnd() * W, rnd() * H, 1 + rnd() * 2, 1 + rnd() * 2);
+  }
+  ctx.restore();
+}
+
+function tktPerf(ctx, y, W) {
+  ctx.save();
+  ctx.strokeStyle = TKT.soft; ctx.lineWidth = 2; ctx.setLineDash([10, 9]);
+  ctx.beginPath(); ctx.moveTo(TKT.pad * 0.6, y); ctx.lineTo(W - TKT.pad * 0.6, y); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = '#121813';
+  for (const x of [TKT.pad * 0.6, W - TKT.pad * 0.6]) { ctx.beginPath(); ctx.arc(x, y, 9, 0, 7); ctx.fill(); }
+  ctx.restore();
+}
+
+function loadImage(src) {
+  return new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = src; });
+}
+
+function currentTicketPayload() {
+  const spread = SPREADS[state.spread];
+  return {
+    query: state.query,
+    cards: state.drawn.map((c, i) => ({ image: c.image, role: spread.positions[i].role, name: c.name, alternateName: c.alternateName, identifier: c.identifier })),
+    paragraphs: state.paragraphs || [],
+    orbes: orbes.phase === 'answer' ? orbes.lastText : '',
+    when: new Date()
+  };
+}
+
+async function buildTicketCanvas(p) {
+  try { await Promise.all([document.fonts.load('30px Fell'), document.fonts.load('30px "Fell SC"'), document.fonts.load('40px "Fell Title"'), document.fonts.load('italic 30px Fell')]); } catch (e) {}
+  const W = TKT.W, pad = TKT.pad, textW = W - pad * 2;
+  const cv = document.createElement('canvas');
+  const ctx = cv.getContext('2d');
+
+  /* --- pasada 1: medir --- */
+  ctx.font = 'italic 34px Fell';
+  const qLines = tktWrap(ctx, '«' + p.query + '»', textW);
+  const n = p.cards.length;
+  const thumbW = n === 1 ? 300 : Math.min(260, (textW - (n - 1) * 40) / n);
+  const thumbH = Math.round(thumbW * 1.5);
+  ctx.font = '26px Fell';
+  const nameLines = p.cards.map(c => tktWrap(ctx, c.name, thumbW + 30).slice(0, 2));
+  const namesH = 34 + Math.max.apply(null, nameLines.map(l => l.length)) * 32 + 30;
+  ctx.font = '31px Fell';
+  const paras = p.paragraphs.map(t => tktWrap(ctx, t, textW));
+  const orbParas = p.orbes ? p.orbes.split(/\n+/).filter(Boolean).map(t => tktWrap(ctx, t, textW)) : [];
+  const LH = 45;
+  let H = pad + 150 + 34 + 26 + qLines.length * 46 + 34 + thumbH + 40 + namesH + 34 + 40 + 66 + 30;
+  H += paras.reduce((a, l) => a + l.length, 0) * LH + paras.length * 16;
+  if (orbParas.length) H += 60 + 52 + orbParas.reduce((a, l) => a + l.length, 0) * LH + orbParas.length * 16 + 60;
+  H += 120;
+  cv.width = W; cv.height = H;
+
+  /* --- fondo --- */
+  const g = ctx.createRadialGradient(W * 0.3, 0, 60, W * 0.5, H * 0.4, H * 0.9);
+  g.addColorStop(0, '#efe3c3'); g.addColorStop(0.55, TKT.paper); g.addColorStop(1, TKT.paper2);
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  tktGrain(ctx, W, H, hashSeed(p.query + String(p.when.getTime())));
+
+  /* --- marco --- */
+  ctx.strokeStyle = TKT.coral; ctx.lineWidth = 5; ctx.strokeRect(20, 20, W - 40, H - 40);
+  ctx.strokeStyle = TKT.edge; ctx.lineWidth = 1.6; ctx.strokeRect(34, 34, W - 68, H - 68);
+  ctx.fillStyle = TKT.coral;
+  for (const [x, y] of [[20, 20], [W - 20, 20], [20, H - 20], [W - 20, H - 20]]) { ctx.beginPath(); ctx.arc(x, y, 7, 0, 7); ctx.fill(); }
+
+  let y = pad;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+  try { ctx.letterSpacing = '5px'; } catch (e) {}
+  tktFlourish(ctx, W / 2, y + 6, 200, TKT.coralt);
+  y += 52;
+  ctx.fillStyle = TKT.ink; ctx.font = '40px "Fell SC"';
+  ctx.fillText('Arrels de corall, nits de plata', W / 2, y);
+  y += 40;
+  ctx.fillStyle = TKT.coral; ctx.font = '27px "Fell SC"';
+  ctx.fillText('· Lectura del oráculo ·', W / 2, y);
+  try { ctx.letterSpacing = '0px'; } catch (e) {}
+  y += 34;
+
+  /* --- número y fecha --- */
+  const num = 1000 + (hashSeed(p.query + p.when.toDateString()) % 9000);
+  const fecha = p.when.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
+  ctx.font = '24px Fell'; ctx.fillStyle = TKT.soft;
+  ctx.textAlign = 'left'; ctx.fillText('Nº ' + num, pad, y);
+  ctx.textAlign = 'right'; ctx.fillText(fecha, W - pad, y);
+  ctx.textAlign = 'center';
+  y += 26;
+  tktPerf(ctx, y, W);
+  y += 40;
+
+  /* --- pregunta --- */
+  ctx.font = 'italic 34px Fell'; ctx.fillStyle = TKT.ink;
+  for (const l of qLines) { ctx.fillText(l, W / 2, y); y += 46; }
+  y += 20;
+
+  /* --- cartas --- */
+  const rowW = n * thumbW + (n - 1) * 40;
+  let x = (W - rowW) / 2;
+  for (let i = 0; i < n; i++) {
+    const c = p.cards[i];
+    const im = await loadImage(c.image);
+    ctx.save();
+    const r = 12;
+    ctx.beginPath();
+    ctx.roundRect(x, y, thumbW, thumbH, r);
+    ctx.clip();
+    const ir = im.width / im.height, tr = thumbW / thumbH;
+    let dw = thumbW, dh = thumbH, dx = x, dy = y;
+    if (ir > tr) { dh = thumbH; dw = dh * ir; dx = x - (dw - thumbW) / 2; } else { dw = thumbW; dh = dw / ir; dy = y - (dh - thumbH) / 2; }
+    ctx.drawImage(im, dx, dy, dw, dh);
+    ctx.restore();
+    ctx.strokeStyle = TKT.coral; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.roundRect(x, y, thumbW, thumbH, r); ctx.stroke();
+    x += thumbW + 40;
+  }
+  y += thumbH + 34;
+  x = (W - rowW) / 2;
+  for (let i = 0; i < n; i++) {
+    const c = p.cards[i], cx = x + thumbW / 2;
+    ctx.font = '23px "Fell SC"'; ctx.fillStyle = TKT.coral;
+    ctx.fillText(c.role, cx, y);
+    ctx.font = '26px Fell'; ctx.fillStyle = TKT.ink;
+    let yy = y + 34;
+    for (const l of nameLines[i]) { ctx.fillText(l, cx, yy); yy += 32; }
+    ctx.font = 'italic 22px Fell'; ctx.fillStyle = TKT.soft;
+    ctx.fillText(c.alternateName, cx, yy);
+    x += thumbW + 40;
+  }
+  y += namesH + 34;
+  tktFlourish(ctx, W / 2, y, 160, TKT.coralt);
+  y += 56;
+
+  /* --- síntesis --- */
+  ctx.font = '38px "Fell Title"'; ctx.fillStyle = TKT.ink;
+  ctx.fillText('Síntesis de la lectura', W / 2, y);
+  y += 40;
+  ctx.textAlign = 'left';
+  paras.forEach((lines, pi) => {
+    ctx.font = '31px Fell'; ctx.fillStyle = TKT.ink;
+    let tx = pad;
+    lines.forEach((l, li) => {
+      if (pi === 0 && li === 0) {
+        const first = l.charAt(0), rest = l.slice(1);
+        ctx.font = '76px "Fell Title"'; ctx.fillStyle = TKT.coral;
+        ctx.fillText(first, pad, y + 18);
+        const off = ctx.measureText(first).width + 10;
+        ctx.font = '31px Fell'; ctx.fillStyle = TKT.ink;
+        ctx.fillText(rest, pad + off, y);
+      } else {
+        ctx.fillText(l, tx, y);
+      }
+      y += LH;
+    });
+    y += 16;
+  });
+  ctx.textAlign = 'center';
+
+  /* --- orbes (solo si hay respuesta mostrada) --- */
+  if (orbParas.length) {
+    y += 44;
+    tktPerf(ctx, y, W);
+    y += 60;
+    ctx.font = '38px "Fell Title"'; ctx.fillStyle = TKT.ink;
+    ctx.fillText('Respuesta de los orbes', W / 2, y);
+    y += 40;
+    ctx.textAlign = 'left';
+    ctx.font = '31px Fell';
+    for (const lines of orbParas) {
+      for (const l of lines) { ctx.fillText(l, pad, y); y += LH; }
+      y += 16;
+    }
+    ctx.textAlign = 'center';
+    ctx.font = 'italic 23px Fell'; ctx.fillStyle = TKT.soft;
+    ctx.fillText('Interpretación de ' + ORBES_CONFIG.service + '.', W / 2, y + 10);
+    y += 44;
+  }
+
+  /* --- pie --- */
+  y = H - pad - 66;
+  tktPerf(ctx, y, W);
+  y += 44;
+  ctx.font = 'italic 26px Fell'; ctx.fillStyle = TKT.soft;
+  ctx.fillText('Los naipes aconsejan, no sentencian.', W / 2, y);
+  y += 32;
+  ctx.font = '20px Fell'; ctx.fillStyle = TKT.edge;
+  ctx.fillText('xesco-tejedor.github.io/tarot-arrels-de-corall', W / 2, y);
+  return cv;
+}
+
+function ticketName() {
+  const d = new Date();
+  const p2 = v => String(v).padStart(2, '0');
+  return 'tarjeta-tarot-' + d.getFullYear() + p2(d.getMonth() + 1) + p2(d.getDate()) + '-' + p2(d.getHours()) + p2(d.getMinutes()) + '.png';
+}
+
+async function withTicketButton(btn, fn) {
+  if (btn.disabled) return;
+  const label = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Preparando…';
+  try { await fn(await buildTicketCanvas(currentTicketPayload())); }
+  catch (e) { btn.textContent = 'No se pudo crear'; setTimeout(() => { btn.textContent = label; btn.disabled = false; }, 1600); return; }
+  btn.textContent = label; btn.disabled = false;
+}
+
+function initTicket() {
+  const dl = $('#ticket-download'), sh = $('#ticket-share');
+  if (!dl) return;
+  dl.addEventListener('click', () => withTicketButton(dl, cv => new Promise(res => cv.toBlob(blob => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = ticketName();
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    res();
+  }, 'image/png'))));
+  try {
+    const probe = new File([new Blob(['x'])], 't.png', { type: 'image/png' });
+    if (navigator.canShare && navigator.canShare({ files: [probe] })) {
+      sh.hidden = false;
+      sh.addEventListener('click', () => withTicketButton(sh, cv => new Promise((res, rej) => cv.toBlob(async blob => {
+        try {
+          const f = new File([blob], ticketName(), { type: 'image/png' });
+          await navigator.share({ files: [f], title: 'Arrels de corall, nits de plata', text: 'Mi lectura de tarot' });
+          res();
+        } catch (e) { if (e && e.name === 'AbortError') res(); else rej(e); }
+      }, 'image/png'))));
+    }
+  } catch (e) {}
+}
+
 /* ---------- Estado de la UI ---------- */
-const state = { busy: false, drawn: [], flipped: 0, query: '', spread: DEFAULT_SPREAD };
+
+/* ---------- Estado de la UI ---------- */
+const state = { busy: false, drawn: [], flipped: 0, query: '', spread: DEFAULT_SPREAD, paragraphs: [] };
 
 function fillSpreadSelect() {
   const sel = $('#spread');
@@ -528,16 +897,19 @@ async function finishReading() {
     alternateName: c.alternateName, description: c.description
   }));
   await sleep(1400);
-  const result = await fetchInterpretationEngine(state.query, ctx);
+  const result = localInterpretation(state.query, ctx);
+  state.paragraphs = result.paragraphs;
   const box = $('#synthesis-text');
   box.innerHTML = '';
   result.paragraphs.forEach(p => box.appendChild(el('p', null, p)));
   $('#synthesis').hidden = false;
   $('#reset').hidden = false;
+  orbesOffer(ctx);
   $('#synthesis').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 function reset() {
+  orbesHide();
   $('#phase-reading').hidden = true;
   $('#phase-input').hidden = false;
   $('#query').value = '';
@@ -742,6 +1114,8 @@ document.addEventListener('DOMContentLoaded', () => {
   initEmbers();
   initSoundToggle();
   initMusic();
+  orbesInit();
+  initTicket();
   fillSpreadSelect();
   preload();
   $('#consult-form').addEventListener('submit', startConsult);
