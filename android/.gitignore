@@ -1,0 +1,14 @@
+# Secretos y locales: NUNCA subir
+tarot.keystore
+keystore.properties
+local.properties
+*.jks
+*.keystore
+# Salidas de compilacion
+build/
+.gradle/
+*.apk
+*.aab
+
+local.properties
+app/src/main/assets/

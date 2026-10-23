@@ -1,0 +1,32 @@
+plugins { id 'com.android.application' }
+
+def ks = rootProject.file('keystore.properties')
+def kp = new Properties()
+if (ks.exists()) kp.load(new FileInputStream(ks))
+
+android {
+    namespace 'es.xescotejedor.tarot'
+    compileSdk 36
+    defaultConfig {
+        applicationId 'es.xescotejedor.tarot'
+        minSdk 24
+        targetSdk 34
+        versionCode 1
+        versionName '1.0'
+    }
+    signingConfigs {
+        release {
+            storeFile rootProject.file('tarot.keystore')
+            storePassword kp.getProperty('storePassword','')
+            keyAlias 'tarot'
+            keyPassword kp.getProperty('keyPassword','')
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            if (rootProject.file('tarot.keystore').exists()) signingConfig signingConfigs.release
+        }
+    }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+}
