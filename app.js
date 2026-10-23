@@ -220,8 +220,8 @@ const DEFAULT_SPREAD = 'three';
    Con url vacía la web es 100% offline y no se muestra la opción. */
 const ORBES_CONFIG = {
   url: 'https://tarot-orbes.francesc-adria-perello.workers.dev',
-  service: 'DeepSeek, una IA externa, a través del servidor de esta web',
-  privacy: 'El servicio procesa la consulta al momento, sin guardarla ni usarla para entrenar modelos.'
+  service: 'DeepSeek, un modelo de IA que se ejecuta en Cloudflare a través del servidor de esta web',
+  privacy: 'Cloudflare procesa la consulta al momento, sin guardarla ni usarla para entrenar modelos'
 };
 
 /* ---------- JSON-LD en <head> ---------- */
@@ -420,7 +420,7 @@ function orbesOffer(ctx) {
   const ask = el('button', 'button button--ghost', 'Consultar los orbes celestiales');
   ask.id = 'orbes-ask';
   ask.type = 'button';
-  const note = el('p', 'note', 'Hay conexión: puedes pedir una segunda interpretación a ' + ORBES_CONFIG.service + '. Tu pregunta y tus cartas solo salen de tu dispositivo si lo pides.');
+  const note = el('p', 'note', 'Hay conexión: puedes pedir una segunda interpretación a ' + ORBES_CONFIG.service + '. Tu pregunta, tus cartas y la lectura solo salen de tu dispositivo si lo pides.');
   ask.addEventListener('click', orbesConsent);
   box.appendChild(ask);
   box.appendChild(note);
