@@ -110,5 +110,6 @@ select.form__field{font-size:1rem;text-overflow:ellipsis}
 .embers{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
 
 .sound{display:block;margin:12px auto 0;font-family:var(--sc);font-size:.85rem;letter-spacing:.08em;color:var(--cream-dim);background:rgba(18,24,19,.55);border:1px solid rgba(217,143,120,.4);border-radius:3px;padding:6px 10px;cursor:pointer}
+.sound--music{margin-top:8px}
 .sound[aria-pressed="false"]{opacity:.7;text-decoration:line-through}
 .sound:focus-visible{outline:2px solid var(--coral-lt);outline-offset:2px}
