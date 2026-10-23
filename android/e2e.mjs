@@ -63,6 +63,7 @@ if (MODE === 'main') {
   log('silencio: fuentes nuevas con sonido apagado', (await ev('window.__n')) - before);
   log('silencio guardado', await ev(`localStorage.getItem('tarot-sound')`));
   shot('04-silencio');
+  log('reduce motion del sistema', await ev(`matchMedia('(prefers-reduced-motion: reduce)').matches`));
   log('pavesas canvas', await ev(`(()=>{const c=document.getElementById('embers');return !!c&&getComputedStyle(c).display!=='none'})()`));
   log('fuentes tipograficas cargadas', await ev(`document.fonts.check("16px 'Fell'")`));
   process.exit(0);
