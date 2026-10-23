@@ -595,7 +595,7 @@ function playCardSound() {
 function initSoundToggle() {
   const b = document.getElementById('sound-toggle');
   if (!b) return;
-  const paint = () => { b.setAttribute('aria-pressed', String(sound.on)); b.textContent = sound.on ? 'Sonido: sí' : 'Sonido: no'; };
+  const paint = () => { b.setAttribute('aria-pressed', String(sound.on)); };
   paint();
   b.addEventListener('click', () => {
     sound.on = !sound.on;
@@ -665,7 +665,7 @@ function musicPause() {
 }
 function initMusic() {
   const b = document.getElementById('music-toggle');
-  const paint = () => { if (!b) return; b.setAttribute('aria-pressed', String(music.on)); b.textContent = music.on ? 'Música: sí' : 'Música: no'; };
+  const paint = () => { if (!b) return; b.setAttribute('aria-pressed', String(music.on)); };
   paint();
   const first = () => { document.removeEventListener('pointerdown', first, true); document.removeEventListener('keydown', first, true); if (!music.started) musicPlay(); };
   document.addEventListener('pointerdown', first, true);
