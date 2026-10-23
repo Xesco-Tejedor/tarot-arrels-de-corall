@@ -288,41 +288,6 @@ const CARD_READING = {
   'XXI':  { grp: 'cierre',  mot: ['coral', 'raíz'],  g: 'reunir origen y cielo en un solo árbol',          core: 'habla de lo que sostiene bajo tierra y de un ciclo que se reúne y cierra',       ask: '¿Qué de lo que ya tienes sostiene esto, y qué se completa con ello?' }
 };
 
-const GROUP_LINKS = {
-  'soltar>inicio':  'Primero algo se suelta y luego algo empieza: la segunda carta parece nacer del hueco que deja la primera.',
-  'soltar>hacer':   'Lo que se suelta en la primera da espacio a la acción de la segunda: hacer sin cargar con lo anterior.',
-  'soltar>cuidar':  'Tras lo que se rompe o se suelta, la segunda carta pide refugio y cuidado, no prisa.',
-  'soltar>mirar':   'Después de soltar, la segunda carta propone mirar con calma lo que ha quedado.',
-  'soltar>cierre':  'Soltar prepara el cierre: lo que termina deja ver lo que de verdad se queda.',
-  'inicio>hacer':   'Lo que empieza en la primera pasa a ser obra en la segunda: del impulso al trabajo.',
-  'inicio>cuidar':  'Lo recién nacido de la primera necesita el amparo que ofrece la segunda.',
-  'inicio>mirar':   'Tras el comienzo, la segunda carta pide parar a mirar hacia dónde va.',
-  'hacer>mirar':    'Después de hacer, toca mirar lo hecho: la segunda carta pide claridad antes de seguir.',
-  'hacer>cuidar':   'Lo que se hace en la primera necesita, en la segunda, ser cuidado para sostenerse.',
-  'hacer>soltar':   'Hay esfuerzo en la primera y desprendimiento en la segunda: puede que parte de lo construido deba cambiar de forma.',
-  'hacer>cierre':   'El trabajo de la primera apunta a un cierre en la segunda: lo hecho se reúne.',
-  'cuidar>hacer':   'Lo que se cuida en la primera se vuelve acción en la segunda: de guardar a mover.',
-  'cuidar>mirar':   'Del cuidado de la primera se pasa, en la segunda, a una mirada más clara.',
-  'cuidar>soltar':  'Hay protección en la primera y desprendimiento en la segunda: cuidar también es saber cuándo soltar.',
-  'cuidar>inicio':  'Lo que se guarda en la primera está listo para empezar en la segunda.',
-  'mirar>hacer':    'Lo que se ve en la primera pide, en la segunda, ponerse en marcha.',
-  'mirar>soltar':   'Lo que la primera deja ver hace posible soltar lo que muestra la segunda.',
-  'mirar>cuidar':   'Tras mirar con claridad, la segunda carta pide cuidar lo visto.',
-  'ciclo>soltar':   'El giro de la primera conduce a un desprendimiento en la segunda: el ciclo pide dejar algo atrás.',
-  'ciclo>inicio':   'El ciclo de la primera desemboca, en la segunda, en un comienzo.',
-  'ciclo>hacer':    'Lo que se pesa o se equilibra en la primera se convierte en acción en la segunda.',
-  'ciclo>mirar':    'Tras pesar y girar, la segunda carta pide claridad.',
-  'ciclo>cuidar':   'El giro de la primera deja a la segunda la tarea de cuidar lo que queda.',
-  'ciclo>cierre':   'El ciclo de la primera llega, en la segunda, a su cierre.',
-  'cierre>inicio':  'Lo que cierra en la primera abre otra vuelta en la segunda.'
-};
-const MOTIF_LABEL = {
-  origen: 'el huevo y lo que aún está por nacer', hilo: 'el hilo y el tejido', 'pájaro': 'los pájaros y sus voces',
-  noche: 'la noche', luz: 'la luz', coral: 'el coral', 'raíz': 'las raíces', piedra: 'la piedra', agua: 'el agua',
-  voz: 'la voz', oficio: 'el oficio', umbral: 'el umbral'
-};
-
-
 /* Temas que el motor reconoce por las palabras escritas (raíces léxicas) y, para cada tema,
    qué propone cada familia de cartas. Es un motor local de reglas: no entiende frases abiertas,
    solo reconoce estos temas; fuera de ellos usa el gesto propio de cada carta. */
@@ -336,15 +301,32 @@ const THEMES = [
   ['confianza', 'tu confianza', ['confianza', 'libertad', 'autoestima', 'seguridad']],
   ['cambio', 'el cambio', ['cambio', 'futuro', 'camino', 'viaje', 'decisi', 'raíces', 'raices']]
 ];
-const THEME_GRP = {
-  trabajo:  { inicio: 'empezar con algo pequeño y aún sin forma, sin exigirle ya resultados', hacer: 'poner las manos en una pieza concreta y terminarla antes de abrir otra', cuidar: 'proteger lo que ya funciona y no exponerlo antes de que esté listo', mirar: 'parar a ver con claridad qué has hecho y cuál es el siguiente paso real', ciclo: 'medir esfuerzo y descanso, y aceptar que hay épocas de más y de menos', soltar: 'dejar una tarea o un formato que ya no sostiene nada', cierre: 'completar y reunir lo hecho en lugar de seguir añadiendo' },
-  vinculo:  { inicio: 'dejar que algo empiece sin exigirle ya un nombre', hacer: 'decir con claridad algo propio y dar un gesto concreto', cuidar: 'cuidar sin encerrar: dar refugio y respetar el espacio del otro', mirar: 'mirar con calma lo que de verdad hay entre vosotros', ciclo: 'pesar lo que das y lo que recibes, con firmeza y con ternura', soltar: 'soltar un peso o un papel que ya no os corresponde', cierre: 'reconocer qué de lo vuestro es sólido y se completa' },
-  hogar:    { inicio: 'tratar el lugar como algo por nacer, sin llenarlo de prisa', hacer: 'hacer el sitio tuyo con cosas pequeñas y manuales', cuidar: 'buscar un refugio donde sentirte a salvo antes de decidir más', mirar: 'ver con claridad qué necesitas de un sitio antes de elegirlo', ciclo: 'aceptar que una etapa del lugar gira y pesar qué se queda', soltar: 'dejar lo que ya no cabe en este sitio', cierre: 'reconocer qué te sostiene de donde vienes y si te basta' },
-  dinero:   { inicio: 'empezar con una base pequeña y proteger lo poco que ya hay', hacer: 'dar un paso material concreto en lugar de seguir dándole vueltas', cuidar: 'proteger lo que tienes y no arriesgarlo por prisa', mirar: 'ver las cifras reales con claridad antes de decidir', ciclo: 'pesar con medida ingresos y gastos, sin dramatizar', soltar: 'dejar un gasto o una carga que ya no se justifica', cierre: 'asentar una base sólida y completar lo que ya sostienes' },
-  creacion: { inicio: 'cuidar la idea todavía en reposo, sin forzarla a nacer', hacer: 'decir o mostrar algo propio, por pequeño que sea', cuidar: 'darle refugio y tiempo a lo que haces antes de enseñarlo', mirar: 'ver con claridad qué de tu obra ya está vivo', ciclo: 'aceptar que crear va por temporadas', soltar: 'dejar una forma que ya no te sirve para que salga lo que contenía', cierre: 'terminar la pieza y reunirla en un todo' },
-  cuerpo:   { inicio: 'tratarte como algo frágil que empieza, sin exigirte ya', hacer: 'hacer un gesto pequeño y concreto de cuidado', cuidar: 'darte amparo sin encerrarte', mirar: 'bajar el ruido y mirar con calma qué necesitas', ciclo: 'medir el ritmo, con menos miedo y más medida', soltar: 'dejar caer un peso que quizá no es tuyo, como una pluma', cierre: 'reconocer lo que ya te sostiene y descansar en ello' },
-  confianza:{ inicio: 'responder a lo que te llama, aunque aún sea frágil', hacer: 'decir con claridad una verdad pequeña', cuidar: 'proteger tu confianza sin encerrarla', mirar: 'sostener una esperanza quieta y suficiente', ciclo: 'pesar con firmeza y con ternura, y nombrar el miedo para soltarlo', soltar: 'soltar las voces ajenas que pesan', cierre: 'apoyarte en lo que ya te sostiene' },
-  cambio:   { inicio: 'dar el primer paso aunque no se vea el resto del camino', hacer: 'elegir un rumbo y sostenerlo aunque algo tire hacia otro', cuidar: 'esperar a que la puerta esté lista y no forzarla', mirar: 'dar solo el próximo paso, con la luz que ya tienes', ciclo: 'aceptar el giro y empezar a hilar lo que viene', soltar: 'dejar que algo termine para que salga lo que contenía', cierre: 'cerrar bien una vuelta antes de abrir la siguiente' }
+/* Cada tema usa una de cuatro lentes. Para cada carta hay una frase por lente, escrita
+   a partir de la descripción de esa carta y de ninguna otra. */
+const THEME_LENS = { trabajo: 'obra', dinero: 'obra', creacion: 'obra', vinculo: 'vinculo', hogar: 'rumbo', cuerpo: 'interior', confianza: 'interior', cambio: 'rumbo' };
+const CARD_LENS = {
+  '0':    { obra: 'cuidar la idea en reposo sin forzarla todavía a tener forma', vinculo: 'cuidar lo que aún no ha nacido entre vosotros, sin apurarlo', interior: 'tratar lo frágil que empieza en ti como algo ya completo, sin exigirle', rumbo: 'proteger el comienzo: el salto está antes del primer paso' },
+  'I':    { obra: 'trabajar despacio, con materiales honestos, hasta que una pieza pequeña tenga alma', vinculo: 'poner atención con las manos: hacer algo concreto en vez de solo hablarlo', interior: 'usar el oficio de las manos como forma de atención y de calma', rumbo: 'poner voluntad, herramientas y materia a trabajar en un primer paso concreto' },
+  'II':   { obra: 'avanzar con constancia en silencio, en lo que se teje sin que nadie lo vea', vinculo: 'cuidar con paciencia y guardar lo que sabes, sin forzarlo a salir', interior: 'fiarte de la intuición y del saber guardado, y remendar con paciencia', rumbo: 'esperar y tejer en silencio: la respuesta se hila de noche' },
+  'III':  { obra: 'crear y decir lo propio con claridad y belleza: la canción pendiente', vinculo: 'decir una verdad pequeña que pide aire', interior: 'dejar brotar lo propio sin pedir permiso', rumbo: 'expresar lo tuyo con claridad: decirlo ya es moverse' },
+  'IV':   { obra: 'dar orden y amparo a lo frágil, sin encerrarlo', vinculo: 'proteger sin encerrar, y mirar también quién cuida de quien cuida', interior: 'buscar amparo y orden, y cuidar también de quien te cuida', rumbo: 'poner orden y vigilancia amable en lo frágil antes de moverte' },
+  'V':    { obra: 'esperar a que la puerta pequeña esté lista y saber quién guarda la llave', vinculo: 'respetar un secreto bien guardado y no forzar la puerta', interior: 'saber esperar: la llave la tiene quien sabe esperar', rumbo: 'ver qué puerta pequeña está lista y esperar para cruzarla' },
+  'VI':   { obra: 'elegir con quién tejer y hacer refugio con lo que hay a mano', vinculo: 'elegir tejer con alguien: hogar y cobijo hechos de lo que hay a mano', interior: 'hacer refugio con lo que hay a mano y dejar incubar lo que crece en compañía', rumbo: 'elegir tejer con alguien y construir cobijo con lo que ya tienes' },
+  'VII':  { obra: 'elegir el camino y sostenerlo aunque tiren en direcciones distintas', vinculo: 'sostener la dirección elegida aunque cada parte tire hacia un lado', interior: 'llevar las riendas de la voluntad cuando tiran fuerzas distintas', rumbo: 'elegir el camino y sostenerlo, incluso cuando tiran en direcciones distintas' },
+  'VIII': { obra: 'dejar crecer despacio, en pequeño y sin romperse, lo cotidiano', vinculo: 'crecer con fuerza blanda, sin prisa, en lo cotidiano', interior: 'apoyarte en una fuerza blanda que no se rompe', rumbo: 'avanzar con fuerza blanda, ramificando despacio' },
+  'IX':   { obra: 'dar solo el próximo paso con la luz que ya tienes', vinculo: 'retirarte un poco para ver mejor y confiar en una guía frágil y suficiente', interior: 'confiar en una guía frágil y suficiente: solo se ve la próxima piedra', rumbo: 'dar solo el próximo paso: no se ve todo el camino' },
+  'X':    { obra: 'aceptar el ciclo: lo que has sido se hila en lo que viene', vinculo: 'reconocer qué herencia se hila entre vosotros', interior: 'aceptar el giro: empezar a hilarlo es la manera de atravesarlo', rumbo: 'aceptar el giro y empezar a hilarlo' },
+  'XI':   { obra: 'pesar con justicia, con firmeza y ternura: lo que decides deja huella', vinculo: 'sostener firmeza y ternura a la vez al pesar lo vuestro', interior: 'pesar con equilibrio, con firmeza y con ternura hacia ti', rumbo: 'decidir con rectitud: la decisión deja huella' },
+  'XII':  { obra: 'detenerte a propósito: el reposo es fértil y no hay que forzar el despertar', vinculo: 'no forzar el despertar de algo que parece quieto', interior: 'permitirte suspenderte y mirar de otra manera', rumbo: 'suspenderte a propósito y mirar de otra manera antes de moverte' },
+  'XIII': { obra: 'dejar que una forma se acabe para que salga lo que contenía', vinculo: 'aceptar que una forma de la relación se acabe para que salga lo que contenía', interior: 'dejar que una cáscara ceda: es una ruptura que libera', rumbo: 'dejar que una forma se acabe: lo que contenía sale' },
+  'XIV':  { obra: 'avanzar con medida, mezcla y equilibrio, con atención y no con miedo', vinculo: 'avanzar con medida y equilibrio, sin miedo', interior: 'cruzar con atención y equilibrio, no con miedo', rumbo: 'cruzar el abismo por un solo hilo, con atención y no con miedo' },
+  'XV':   { obra: 'nombrar los juicios y deseos ajenos que pesan sobre lo que haces', vinculo: 'distinguir las voces ajenas (juicios, costumbres) de lo que de verdad es vuestro', interior: 'nombrar el peso de las voces ajenas: es empezar a soltarlo', rumbo: 'distinguir qué deseos y costumbres no son tuyos antes de elegir' },
+  'XVI':  { obra: 'mirar lo que la grieta enseña sobre lo que de verdad sostenía esto', vinculo: 'ver qué sostenía de verdad lo que se agrieta', interior: 'dejar que lo que se rompe muestre lo que sostenía: es una caída que limpia', rumbo: 'aceptar que lo que se rompe revela lo que sostenía' },
+  'XVII': { obra: 'esperar con esperanza quieta y suficiente el destello que cruza como un pez de luz', vinculo: 'sostener una esperanza quieta y suficiente', interior: 'quedarte en la quietud y el reflejo: tras la noche cerrada llega una intuición', rumbo: 'esperar con esperanza quieta: tras la noche cerrada cruza una intuición' },
+  'XVIII':{ obra: 'aligerar: dejar caer sin pérdida lo que pesa, aunque no se vea todo claro', vinculo: 'dejar que la luz se lleve el peso sin perder lo esencial', interior: 'dejar que la noche suelte plumas: ligereza sin pérdida, aunque no se vea claro', rumbo: 'avanzar ligero: lo que no se ve claro puede esperar' },
+  'XIX':  { obra: 'verlo todo a la luz, con una claridad que no quema y una alegría sencilla', vinculo: 'mirar con claridad que no quema y con alegría sencilla', interior: 'permitirte la alegría sencilla y la claridad', rumbo: 'ver con claridad, sin que queme, lo que hay' },
+  'XX':   { obra: 'responder a lo que te llama: volver a nacer con memoria', vinculo: 'responder a una llamada que despierta algo entre vosotros', interior: 'despertar y responder a lo que te llama', rumbo: 'responder a lo que te llama: volver a nacer con memoria' },
+  'XXI':  { obra: 'reunir en un solo árbol origen y cielo: lo que sostiene bajo tierra cierra el ciclo', vinculo: 'reconocer lo que os sostiene bajo tierra y reunir el ciclo', interior: 'apoyarte en lo que te sostiene bajo tierra', rumbo: 'cerrar y reunir el ciclo desde lo que ya te sostiene' }
 };
 
 /* Tipo y tema de la pregunta, solo a partir de las palabras escritas. */
@@ -374,90 +356,38 @@ function localInterpretation(prompt, cardContext) {
   const n = cardContext.length;
   const seed = hashSeed(prompt + '|' + cardContext.map(c => c.identifier).join(','));
   const { type, kw, theme } = analyseQuery(prompt);
-  const thLabel = (THEMES.find(x => x[0] === theme) || [])[1];
-  const ctx = thLabel ? `lo que preguntas sobre ${thLabel}` : 'lo que preguntas';
-  const cards = cardContext.map(c => Object.assign({}, c, CARD_READING[c.identifier] || { grp: 'mirar', mot: [], g: 'mirar la imagen con calma', core: firstSentence(c.description), ask: '¿Qué te dice esta imagen sobre lo que preguntas?' }));
+    const cards = cardContext.map(c => Object.assign({}, c, CARD_READING[c.identifier] || { grp: 'mirar', mot: [], g: 'mirar la imagen con calma', core: firstSentence(c.description), ask: '¿Qué te dice esta imagen sobre lo que preguntas?' }));
   const paras = [];
-
-  /* 1. Cómo se lee la pregunta */
-  const NUM = { 2: 'dos', 3: 'tres', 4: 'cuatro', 5: 'cinco' };
-  const nw = NUM[n] || String(n);
-  const unit = n === 1 ? 'la carta como una sola mirada' : `las ${nw} cartas como ${nw} miradas`;
-  const frames = {
-    decision: [`Tu pregunta pide decidir. Las cartas no eligen por ti: sirven para ver qué pide cada lado. Leeré ${unit} sobre la decisión.`],
-    how:      [`Tu pregunta busca un «cómo». Leeré ${n === 1 ? 'la carta como un gesto posible' : 'las cartas como pasos de un camino'}, de lo que sostiene a lo que se abre.`],
-    why:      [`Tu pregunta busca una causa. Leeré ${n === 1 ? 'la carta como una capa' : 'las cartas como capas'}: lo que sostiene, lo que aflora y lo que se puede mover.`],
-    when:     [`Tu pregunta busca un «cuándo». Las cartas no dan fechas; muestran qué clima pide cada momento del proceso.`],
-    what:     [`Tu pregunta busca una respuesta concreta. Leeré ${unit}, cada una como una respuesta parcial.`],
-    open:     [`Tu consulta es abierta. Leeré ${unit} sobre ella.`]
-  };
-  const kwNote = '';
   paras.push(`Tu consulta: «${prompt}».`);
-  paras.push(pick(frames[type], seed) + kwNote);
 
-  /* 2. Cada carta, en su posición, aplicada a la pregunta */
-  const short = kw ? `«${kw}»` : 'tu consulta';
-  const lead = {
-    'Raíz': c => pick([
-      `Como Raíz, ${cardLabel(c)} muestra de dónde parte ${ctx}: ${c.core}.`,
-      `La Raíz trae ${cardLabel(c)}, lo que sostiene ${ctx}: ${c.core}.`], seed),
-    'Tronco': c => pick([
-      `En el Tronco, ${cardLabel(c)} dice cómo se presenta ahora ${short}: ${c.core}.`,
-      `El Tronco, el momento presente, es ${cardLabel(c)}: ${c.core}.`], seed >>> 3),
-    'Copa': c => pick([
-      `En la Copa, ${cardLabel(c)} apunta a lo que puede abrirse: ${c.core}.`,
-      `La Copa, lo que se abre, trae ${cardLabel(c)}: ${c.core}.`], seed >>> 5)
-  };
+  /* Cada carta, en su posición, con su propio significado */
   cards.forEach(c => {
-    const l = lead[c.role] ? lead[c.role](c) : `Como carta única, ${cardLabel(c)} responde a ${ctx} con una imagen: ${c.core}.`;
-    paras.push(`${l} ${c.ask}`);
+    const l = c.role === 'Raíz' ? `La Raíz, lo que sostiene, es ${cardLabel(c)}: ${c.core}.`
+      : c.role === 'Tronco' ? `El Tronco, lo que ocurre ahora, es ${cardLabel(c)}: ${c.core}.`
+      : c.role === 'Copa' ? `La Copa, lo que se abre, es ${cardLabel(c)}: ${c.core}.`
+      : `Tu carta es ${cardLabel(c)}: ${c.core}.`;
+    paras.push(l);
   });
 
-  /* 3. Relaciones entre cartas */
-  if (n > 1) {
-    const rel = [];
-    for (let i = 0; i < n - 1; i++) {
-      const a = cards[i], b = cards[i + 1];
-      const key = a.grp + '>' + b.grp;
-      let s;
-      if (a.grp === b.grp) s = `${a.role} y ${b.role} comparten el mismo tono: las dos hablan de ${a.grp === 'cuidar' ? 'cuidar' : a.grp === 'hacer' ? 'hacer' : a.grp === 'mirar' ? 'mirar con calma' : a.grp === 'soltar' ? 'soltar' : a.grp === 'ciclo' ? 'ciclos y equilibrio' : a.grp === 'inicio' ? 'empezar' : 'cerrar'}, así que se refuerzan.`;
-      else if (GROUP_LINKS[key]) s = `De ${a.role} a ${b.role}: ${lowerFirst(GROUP_LINKS[key]).replace('la primera carta', 'la carta de ' + a.role).replace('la primera', a.role).replace('la segunda carta', 'la carta de ' + b.role).replace('la segunda', b.role)}`;
-      else s = `De ${a.role} a ${b.role} cambia el gesto: de ${a.g} a ${b.g}. Tu pregunta puede estar justo en ese paso.`;
-      rel.push(s);
-    }
-    const shared = [];
-    for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) cards[i].mot.forEach(m => { if (cards[j].mot.indexOf(m) >= 0 && shared.indexOf(m) < 0) shared.push(m); });
-    if (shared.length) rel.push(`Según sus textos, las cartas comparten un motivo: ${shared.slice(0, 2).map(m => MOTIF_LABEL[m]).join(' y ')} reaparece${shared.length > 1 ? 'n' : ''} en más de una, como si se respondieran entre sí.`);
-    paras.push(rel.join(' '));
-  }
-
-  /* 4. Respuesta a la pregunta: qué propone cada carta para el tema y qué se desprende según el tipo de pregunta */
+  /* Respuesta: la frase de cada carta para el tema de la pregunta, sin repetir nada */
   const th = THEMES.find(x => x[0] === theme);
+  const lens = theme ? THEME_LENS[theme] : '';
   const used = {};
   const ges = cards.map(c => {
-    const f = theme && THEME_GRP[theme][c.grp];
+    const f = lens && CARD_LENS[c.identifier] && CARD_LENS[c.identifier][lens];
     if (f && !used[f]) { used[f] = 1; return f; }
     return c.g;
   });
-  const first = cards[0];
-  const named = (c, g) => `«${c.name}» ${g}`;
+  const head = th ? `Sobre ${th[1]}` : 'Sobre lo que preguntas';
   let ans;
-  if (n === 1) {
-    ans = `${th ? 'Sobre ' + th[1] : 'Para lo que preguntas'}, ${named(first, 'apunta a ' + ges[0])}.`;
-  } else {
-    const who = [`la base (${cards[0].name})`, `el presente (${cards[1].name})`, `lo que se abre (${cards[n - 1].name})`];
-    ans = `${th ? 'Sobre ' + th[1] : 'Para lo que preguntas'}: ${who[0]} apunta a ${ges[0]}; ${who[1]}, a ${ges[1]}; y ${who[2]}, a ${ges[n - 1]}.`;
+  if (n === 1) ans = `${head}, «${cards[0].name}» apunta a ${ges[0]}.`;
+  else {
+    const who = ['la base', 'el presente', 'lo que se abre'];
+    ans = `${head}: ${who[0]} («${cards[0].name}») apunta a ${ges[0]}; ${who[1]} («${cards[1].name}»), a ${ges[1]}; y ${who[2]} («${cards[n - 1].name}»), a ${ges[n - 1]}.`;
   }
-  const g0 = ges[0], gm = ges[Math.floor((n - 1) / 2)], gl = ges[n - 1];
-  const tails = {
-    decision: n === 1 ? 'Ni sí ni no: es una inclinación, no un veredicto.' : `Ni sí ni no: las cartas inclinan hacia la opción que permita ${gl}, tras ${gm}.`,
-    how: n === 1 ? 'Ese es el primer paso.' : `Por dónde empezar: ${gm}.`,
-    why: n === 1 ? 'Ese es el punto que la carta propone mover.' : `El punto que las cartas proponen mover está en el presente: ${gm}.`,
-    when: n === 1 ? 'No hay fecha: el momento llega cuando eso esté hecho.' : 'No hay fecha, hay orden: base, presente y lo que se abre, y cada paso llega cuando el anterior está hecho.',
-    what: n === 1 ? '' : `Si te quedas con una sola idea: ${gm}.`,
-    open: n === 1 ? '' : `Si te quedas con una sola idea: ${gm}.`
-  };
-  paras.push((ans + ' ' + tails[type]).trim());
+  if (type === 'when') ans += ' Las cartas no dan fecha, solo el orden en que se mueve.';
+  else if (type === 'decision' && n > 1) ans += ' Como pides decidir, sirven de criterio: mejor la opción que no contradiga ninguna de las tres.';
+  paras.push(ans);
   return { paragraphs: paras };
 }
 
