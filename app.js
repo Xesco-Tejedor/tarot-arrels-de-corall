@@ -368,10 +368,17 @@ function localInterpretation(prompt, cardContext) {
   paras.push(pick(frames[type], seed) + kwNote);
 
   /* 2. Cada carta, en su posición, aplicada a la pregunta */
+  const short = kw ? `«${kw}»` : 'tu consulta';
   const lead = {
-    'Raíz': c => `Como Raíz, ${cardLabel(c)} muestra de dónde parte ${ctx}: ${c.core}.`,
-    'Tronco': c => `En el Tronco, ${cardLabel(c)} describe cómo se presenta ahora ${ctx}: ${c.core}.`,
-    'Copa': c => `En la Copa, ${cardLabel(c)} apunta a lo que puede abrirse en ${ctx}: ${c.core}.`
+    'Raíz': c => pick([
+      `Como Raíz, ${cardLabel(c)} muestra de dónde parte ${ctx}: ${c.core}.`,
+      `La Raíz trae ${cardLabel(c)}, lo que sostiene ${ctx}: ${c.core}.`], seed),
+    'Tronco': c => pick([
+      `En el Tronco, ${cardLabel(c)} dice cómo se presenta ahora ${short}: ${c.core}.`,
+      `El Tronco, el momento presente, es ${cardLabel(c)}: ${c.core}.`], seed >>> 3),
+    'Copa': c => pick([
+      `En la Copa, ${cardLabel(c)} apunta a lo que puede abrirse: ${c.core}.`,
+      `La Copa, lo que se abre, trae ${cardLabel(c)}: ${c.core}.`], seed >>> 5)
   };
   cards.forEach(c => {
     const l = lead[c.role] ? lead[c.role](c) : `Como carta única, ${cardLabel(c)} responde a ${ctx} con una imagen: ${c.core}.`;
