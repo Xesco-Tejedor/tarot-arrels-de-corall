@@ -583,37 +583,36 @@ function reset() {
    al primer toque del usuario, como exigen los navegadores móviles. Se puede silenciar. */
 const sound = { ctx: null, buf: null, on: true };
 try { sound.on = localStorage.getItem('tarot-sound') !== 'off'; } catch (e) { /* sin almacenamiento */ }
-/* Roce largo y apagado: ruido marrón (sin agudos), ataque lento, textura de fibras y cola suave. Sin golpe inicial. */
+/* Roce continuo y tenue: ruido rosa suave, sin graves (los graves suenan a golpe), sin pulsos,
+   envolvente en campana (sube y baja despacio, empieza y acaba en silencio). */
 function makeFeltNoise(ctx) {
-  const len = Math.floor(ctx.sampleRate * 1.2);
+  const len = Math.floor(ctx.sampleRate * 1.4);
   const buf = ctx.createBuffer(1, len, ctx.sampleRate);
   const d = buf.getChannelData(0);
-  let last = 0;
-  for (let i = 0; i < len; i++) { last = (last + 0.04 * (Math.random() * 2 - 1)) / 1.04; d[i] = last * 3.5; }
+  let b0 = 0, b1 = 0, b2 = 0;
+  for (let i = 0; i < len; i++) {
+    const w = Math.random() * 2 - 1;
+    b0 = 0.99765 * b0 + w * 0.099046; b1 = 0.963 * b1 + w * 0.2965164; b2 = 0.57 * b2 + w * 1.0526913;
+    d[i] = (b0 + b1 + b2 + w * 0.1848) * 0.25;
+  }
   return buf;
 }
 function scheduleSlide(ctx, dest, t, noiseBuf) {
-  const dur = 0.85;
+  const dur = 1.0, N = 64, peak = 0.05;
   const src = ctx.createBufferSource(); src.buffer = noiseBuf;
-  const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 120;
-  const band = ctx.createBiquadFilter(); band.type = 'bandpass'; band.Q.value = 0.6;
-  band.frequency.setValueAtTime(380, t);
-  band.frequency.linearRampToValueAtTime(900, t + dur * 0.45);
-  band.frequency.linearRampToValueAtTime(520, t + dur);
-  const low = ctx.createBiquadFilter(); low.type = 'lowpass'; low.frequency.value = 1500;
-  /* textura: modulación suave de la amplitud, como fibras de fieltro rozando */
-  const tex = ctx.createGain(); tex.gain.value = 0.8;
-  const lfo = ctx.createOscillator(); lfo.type = 'triangle'; lfo.frequency.value = 23;
-  const lfoDepth = ctx.createGain(); lfoDepth.gain.value = 0.18;
-  lfo.connect(lfoDepth); lfoDepth.connect(tex.gain);
+  const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 700; hp.Q.value = 0.5;
+  const band = ctx.createBiquadFilter(); band.type = 'bandpass'; band.Q.value = 0.4;
+  band.frequency.setValueAtTime(1400, t);
+  band.frequency.linearRampToValueAtTime(2400, t + dur);
+  const low = ctx.createBiquadFilter(); low.type = 'lowpass'; low.frequency.value = 4200;
+  const curve = new Float32Array(N);
+  for (let i = 0; i < N; i++) { const x = i / (N - 1); curve[i] = peak * Math.pow(Math.sin(Math.PI * x), 2); }
   const env = ctx.createGain();
   env.gain.setValueAtTime(0, t);
-  env.gain.linearRampToValueAtTime(0.08, t + 0.12);
-  env.gain.linearRampToValueAtTime(0.26, t + 0.34);
-  env.gain.linearRampToValueAtTime(0.16, t + 0.58);
-  env.gain.linearRampToValueAtTime(0, t + dur);
-  src.connect(hp); hp.connect(band); band.connect(low); low.connect(tex); tex.connect(env); env.connect(dest);
-  src.start(t, Math.random() * 0.3, dur + 0.05); lfo.start(t); lfo.stop(t + dur + 0.05);
+  env.gain.setValueCurveAtTime(curve, t, dur);
+  env.gain.setValueAtTime(0, t + dur + 0.01);
+  src.connect(hp); hp.connect(band); band.connect(low); low.connect(env); env.connect(dest);
+  src.start(t, Math.random() * 0.3, dur + 0.05);
 }
 function playCardSound() {
   if (!sound.on) return;
