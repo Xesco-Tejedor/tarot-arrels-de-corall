@@ -1,0 +1,19 @@
+name: organize
+on:
+  push:
+    branches: [main]
+    paths: ['fell-*.woff2']
+permissions:
+  contents: write
+jobs:
+  move:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          mkdir -p assets/fonts
+          git mv fell-*.woff2 OFL-IM-Fell.txt assets/fonts/
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git commit -m "Mover tipografias a assets/fonts"
+          git push
