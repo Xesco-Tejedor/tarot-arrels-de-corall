@@ -1,0 +1,95 @@
+name: Android APK
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: android
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Desempaquetar fuentes Android subidas (si hay)
+        run: |
+          if [ -f android-src.b64 ]; then
+            base64 -d android-src.b64 | tar xz
+            rm android-src.b64
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add -A
+            git commit -m "Fuentes Android de la app del tarot"
+            git push
+          fi
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '17' }
+      - uses: gradle/actions/setup-gradle@v3
+        with: { gradle-version: '8.11.1' }
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - name: Generar iconos
+        run: pip install pillow -q && python3 android/make-icons.py
+      - name: Empaquetar la web actual dentro de la app
+        run: |
+          mkdir -p android/app/src/main/assets/www
+          cp index.html styles.css app.js android/app/src/main/assets/www/
+          cp -r assets android/app/src/main/assets/www/assets
+          sha256sum app.js index.html styles.css | tee web-sha.txt
+      - name: Clave de firma
+        env:
+          KS_B64: ${{ secrets.TAROT_KEYSTORE_B64 }}
+          KS_PASS: ${{ secrets.TAROT_KEYSTORE_PASS }}
+        run: |
+          test -n "$KS_B64" && test -n "$KS_PASS"
+          echo "$KS_B64" | base64 -d > android/tarot.keystore
+          printf 'storePassword=%s\nkeyPassword=%s\n' "$KS_PASS" "$KS_PASS" > android/keystore.properties
+      - name: Compilar depuracion y release firmada
+        run: |
+          cd android
+          gradle --no-daemon assembleDebug assembleRelease
+          mkdir -p ../out
+          cp app/build/outputs/apk/debug/app-debug.apk ../out/
+          cp app/build/outputs/apk/release/app-release.apk ../out/tarot-arrels-de-corall.apk
+          $ANDROID_HOME/build-tools/$(ls $ANDROID_HOME/build-tools | sort -V | tail -1)/apksigner verify --print-certs ../out/tarot-arrels-de-corall.apk | head -3
+      - name: Comprobar que la APK lleva el mismo JS que el repo
+        run: |
+          unzip -p out/tarot-arrels-de-corall.apk assets/www/app.js | sha256sum
+          sha256sum app.js
+          test "$(unzip -p out/tarot-arrels-de-corall.apk assets/www/app.js | sha256sum | cut -d' ' -f1)" = "$(sha256sum app.js | cut -d' ' -f1)"
+      - name: Activar KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Emulador API 33
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 33
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          script: bash android/e2e.sh out/app-debug.apk out/tarot-arrels-de-corall.apk
+        continue-on-error: true
+      - name: Resultado
+        id: res
+        run: |
+          cat evidence/veredicto.txt || echo "FAIL sin veredicto" | tee evidence/veredicto.txt
+          grep -q '^PASS' evidence/veredicto.txt && echo ok=1 >> $GITHUB_OUTPUT || echo ok=0 >> $GITHUB_OUTPUT
+      - name: Publicar evidencias (prerelease)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete android-pruebas -y --cleanup-tag || true
+          gh release create android-pruebas evidence/* web-sha.txt --prerelease --title "Evidencias de prueba en emulador (run ${{ github.run_number }})" --notes "Veredicto: $(cat evidence/veredicto.txt). Commit ${{ github.sha }}."
+      - name: Publicar APK solo si las pruebas pasan
+        if: steps.res.outputs.ok == '1'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete android-latest -y --cleanup-tag || true
+          gh release create android-latest out/tarot-arrels-de-corall.apk --latest --title "Arrels de corall, tarot para Android" --notes "APK 1.0 con la web empaquetada (funciona sin conexion). Probada en emulador Android 13 (ver release android-pruebas). El teléfono pedirá permitir orígenes desconocidos."
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: evidencias, path: evidence }
