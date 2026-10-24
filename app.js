@@ -1300,6 +1300,60 @@ function initEmbers() {
   start();
 }
 
+
+/* Ampliar un naipe revelado mientras se mantiene pulsado (táctil, ratón o teclado) */
+function initCardZoom() {
+  const zoom = el('div', 'card-zoom');
+  zoom.setAttribute('aria-hidden', 'true');
+  const frame = el('div', 'card-zoom__frame');
+  const zimg = el('img');
+  zimg.alt = '';
+  frame.appendChild(zimg);
+  zoom.appendChild(frame);
+  document.body.appendChild(zoom);
+
+  const HOLD_MS = 280, MOVE_PX = 12;
+  let timer = 0, startX = 0, startY = 0, open = false, pid = null;
+
+  function show(cardBtn) {
+    const front = cardBtn.querySelector('.card__face--front img');
+    if (!front || !front.src) return;
+    zimg.src = front.src;
+    zimg.alt = front.alt || '';
+    zoom.classList.add('is-open');
+    open = true;
+  }
+  function close() {
+    clearTimeout(timer); timer = 0; pid = null;
+    if (open) { zoom.classList.remove('is-open'); open = false; }
+  }
+
+  document.addEventListener('pointerdown', (ev) => {
+    const cardBtn = ev.target.closest && ev.target.closest('.card.is-flipped');
+    if (!cardBtn) return;
+    pid = ev.pointerId; startX = ev.clientX; startY = ev.clientY;
+    clearTimeout(timer);
+    timer = setTimeout(() => show(cardBtn), HOLD_MS);
+  });
+  document.addEventListener('pointermove', (ev) => {
+    if (pid === null || ev.pointerId !== pid) return;
+    if (Math.hypot(ev.clientX - startX, ev.clientY - startY) > MOVE_PX) close();
+  });
+  ['pointerup', 'pointercancel'].forEach((t) => document.addEventListener(t, close));
+  document.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Escape') { close(); return; }
+    const a = document.activeElement;
+    if (ev.repeat || !a || !a.classList || !a.classList.contains('card') || !a.classList.contains('is-flipped')) return;
+    if (ev.key === ' ' || ev.key === 'Enter') { ev.preventDefault(); show(a); }
+  });
+  document.addEventListener('keyup', (ev) => {
+    if (ev.key === ' ' || ev.key === 'Enter') close();
+  });
+  document.addEventListener('contextmenu', (ev) => {
+    if (ev.target.closest && ev.target.closest('.card')) ev.preventDefault();
+  });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   injectJsonLd();
   initEmbers();
@@ -1308,6 +1362,7 @@ document.addEventListener('DOMContentLoaded', () => {
   orbesInit();
   voiceLoad();
   initTicket();
+  initCardZoom();
   fillSpreadSelect();
   preload();
   $('#consult-form').addEventListener('submit', startConsult);
