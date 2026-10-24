@@ -60,7 +60,7 @@
 
         <button type="submit" class="button">Barajar y Consultar</button>
       </form>
-      <p class="note">Las lecturas se generan en tu dispositivo y tu pregunta no sale de él. Solo si lo pides expresamente, la consulta opcional a los «orbes celestiales» envía tu pregunta, tus cartas y la lectura a DeepSeek, un modelo de IA que se ejecuta en Cloudflare, para una segunda interpretación, siempre con aviso previo. La voz opcional del vaticinio es la voz local de tu dispositivo y tampoco sale de él.</p>
+      <p class="note">Las lecturas se generan en tu dispositivo y tu pregunta no sale de él. Solo si lo pides expresamente, la consulta opcional a los «orbes celestiales» envía tu pregunta, tus cartas y la lectura a DeepSeek, un modelo de IA que se ejecuta en Cloudflare, para una segunda interpretación, siempre con aviso previo. La voz opcional que lee la lectura o el vaticinio es la voz local de tu dispositivo: el texto no sale de él.</p>
     </section>
 
     <section id="phase-reading" class="reading" aria-live="polite" hidden>
@@ -69,7 +69,9 @@
       <p id="reading-hint" class="reading__hint"></p>
       <section id="synthesis" class="synthesis" hidden>
         <svg class="ornament" aria-hidden="true"><use href="#branch"/></svg>
-        <h2 class="synthesis__title">Síntesis de la lectura</h2>
+        <div class="orbes__head" id="synthesis-head">
+          <h2 class="synthesis__title">Síntesis de la lectura</h2>
+        </div>
         <div id="synthesis-text" class="synthesis__text"></div>
         <div id="ticket-export">
         <div class="ticket-actions">
