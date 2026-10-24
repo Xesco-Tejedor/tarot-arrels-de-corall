@@ -591,6 +591,44 @@ function voiceChunks(text) {
   return out.filter(Boolean);
 }
 
+/* Texto SOLO hablado: el identificador de cada arcano (0-XXI) se verbaliza
+   («arcano uno»...) en vez de leer el número romano, y los nombres catalanes
+   se separan para leerlos con voz catalana local si el dispositivo tiene una.
+   El texto visible de la lectura no cambia. */
+const ARCANO_WORDS = ['cero', 'uno', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve', 'diez', 'once', 'doce', 'trece', 'catorce', 'quince', 'dieciséis', 'diecisiete', 'dieciocho', 'diecinueve', 'veinte', 'veintiuno'];
+const ROMAN_TO_N = { '0': 0, 'I': 1, 'II': 2, 'III': 3, 'IV': 4, 'V': 5, 'VI': 6, 'VII': 7, 'VIII': 8, 'IX': 9, 'X': 10, 'XI': 11, 'XII': 12, 'XIII': 13, 'XIV': 14, 'XV': 15, 'XVI': 16, 'XVII': 17, 'XVIII': 18, 'XIX': 19, 'XX': 20, 'XXI': 21 };
+
+function voiceSpeechText(text) {
+  return String(text).replace(/\(\s*(0|[IVX]{1,5})\s*,\s*([^()]{2,60})\)/g, (m, id, alt) => {
+    const n = ROMAN_TO_N[id];
+    return n === undefined ? m : ', arcano ' + ARCANO_WORDS[n] + ', ' + alt.trim();
+  });
+}
+
+function voicePickLang(prefix) {
+  if (!voice.supported) return null;
+  if (!voice.voices.length) voice.voices = window.speechSynthesis.getVoices() || [];
+  const cand = voice.voices.filter(v => v.localService && String(v.lang || '').toLowerCase().replace('_', '-').indexOf(prefix) === 0);
+  if (!cand.length) return null;
+  return cand.slice().sort((a, b) => (b.default ? 1 : 0) - (a.default ? 1 : 0))[0];
+}
+
+/* Segmentos {t, lang}: los nombres de cartas catalanes (con «» o comillas) van
+   marcados 'ca'; el resto, 'es'. Sin voz catalana local, todo se lee en la
+   voz habitual: nunca se usan voces de red. */
+function voiceSegments(text) {
+  const names = DECK_DATA.map(c => c.name).filter(Boolean).sort((a, b) => b.length - a.length);
+  const t = voiceSpeechText(text);
+  if (!names.length) return [{ t: t, lang: 'es' }];
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const re = new RegExp('([«"](?:' + names.map(esc).join('|') + ')[»"])');
+  return t.split(re).filter(Boolean).map(part => {
+    const inner = part.length > 2 ? part.slice(1, -1) : '';
+    const isName = (part[0] === '«' || part[0] === '"') && names.indexOf(inner) !== -1;
+    return { t: part, lang: isName ? 'ca' : 'es' };
+  });
+}
+
 const VOICE_ICON_LISTEN = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5h3.5L12 6v12l-4.5-3.5H4z"/><path d="M15.5 9a4 4 0 0 1 0 6"/><path d="M18 6.5a8 8 0 0 1 0 11"/></svg>';
 const VOICE_ICON_STOP = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5h3.5L12 6v12l-4.5-3.5H4z"/><rect x="15" y="9" width="6" height="6" rx="1" fill="currentColor" stroke="none"/></svg>';
 
@@ -621,20 +659,23 @@ function voiceSpeak(text, btn) {
   if (!voice.supported) return;
   voiceStop();
   voice.btn = btn || null;
-  const chunks = voiceChunks(text);
+  const chunks = [];
+  voiceSegments(text).forEach(seg => voiceChunks(seg.t).forEach(c => chunks.push({ t: c, lang: seg.lang })));
   if (!chunks.length) return;
   const session = ++voice.session;
   voice.speaking = true;
   voicePaintBtn();
   const v = voicePick();
+  const caV = voicePickLang('ca');
   let i = 0;
   const finish = () => { if (session !== voice.session) return; voice.speaking = false; voicePaintBtn(); };
   const next = () => {
     if (session !== voice.session) return;
     if (i >= chunks.length) { finish(); return; }
-    const u = new SpeechSynthesisUtterance(chunks[i++]);
-    if (v) u.voice = v;
-    u.lang = (v && v.lang) || 'es-ES';
+    const chunk = chunks[i++];
+    const u = new SpeechSynthesisUtterance(chunk.t);
+    if (chunk.lang === 'ca' && caV) { u.voice = caV; u.lang = caV.lang || 'ca-ES'; }
+    else { if (v) u.voice = v; u.lang = (v && v.lang) || 'es-ES'; }
     u.rate = 0.97;
     u.pitch = 1;
     u.onend = next;
