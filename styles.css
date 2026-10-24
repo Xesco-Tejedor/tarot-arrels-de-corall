@@ -139,5 +139,5 @@ select.form__field{font-size:1rem;text-overflow:ellipsis}
 /* Voz del vaticinio: botón de solo icono junto al título de la respuesta */
 .orbes__head{display:flex;align-items:center;justify-content:center;gap:12px}
 .orbes__head .synthesis__title{margin:0 0 10px}
-.orbes__voice{flex:0 0 auto;margin:0 0 10px;color:var(--ink);background:rgba(18,24,19,.08);border-color:rgba(120,84,60,.45)}
-.orbes__voice[aria-pressed="true"]{opacity:1;border-color:var(--coral)}
+.orbes__voice,.synthesis__voice{flex:0 0 auto;margin:0 0 10px;color:var(--ink);background:rgba(18,24,19,.08);border-color:rgba(120,84,60,.45)}
+.orbes__voice[aria-pressed="true"],.synthesis__voice[aria-pressed="true"]{opacity:1;border-color:var(--coral)}
