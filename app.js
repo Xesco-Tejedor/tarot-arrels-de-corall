@@ -488,7 +488,7 @@ async function orbesSend() {
     const ans = el('div', 'synthesis orbes__answer');
     const head = el('div', 'orbes__head');
     head.appendChild(el('h2', 'synthesis__title', 'Respuesta de los orbes'));
-    if (voice.supported) head.appendChild(voiceMakeBtn());
+    if (voice.supported && voicePick()) head.appendChild(voiceMakeBtn());
     ans.appendChild(head);
     const body = el('div', 'synthesis__text');
     text.split(/\n+/).filter(Boolean).forEach(p => body.appendChild(el('p', null, p)));
@@ -537,8 +537,8 @@ function orbesInit() {
 
 
 /* ---------- Voz del vaticinio: lectura en voz alta opcional ----------
-   Usa la voz del propio dispositivo (Web Speech API), sin archivos ni servidores
-   nuevos: el texto lo lee el sintetizador del sistema operativo o del navegador.
+   Usa SOLO la voz local del dispositivo (Web Speech API, localService=true):
+   el texto no sale del dispositivo, sin archivos, servidores ni voces de red.
    Nunca suena sola: hay que pulsar el botón. Se lee por frases, no de una vez,
    porque algunos navegadores cortan los textos largos. */
 const voice = {
@@ -554,14 +554,21 @@ function voiceLoad() {
   else window.speechSynthesis.onvoiceschanged = load;
 }
 
+/* Solo voces LOCALES (localService): el texto del vaticinio no sale del dispositivo.
+   Las voces «Google …» de Chrome son de red (localService=false) y se descartan.
+   Si no hay voz local, no se ofrece el botón. */
 function voicePick() {
+  if (!voice.supported) return null;
+  if (!voice.voices.length) voice.voices = window.speechSynthesis.getVoices() || [];
+  const locals = voice.voices.filter(v => v.localService);
+  if (!locals.length) return null;
   const score = v => {
     const l = String(v.lang || '').toLowerCase().replace('_', '-');
     if (l === 'es-es') return 3;
     if (l.indexOf('es') === 0) return 2;
     return v.default ? 1 : 0;
   };
-  return voice.voices.slice().sort((a, b) => score(b) - score(a))[0] || null;
+  return locals.slice().sort((a, b) => score(b) - score(a))[0];
 }
 
 /* Trocea en frases cortas (máx. ~220 caracteres) respetando la puntuación. */
