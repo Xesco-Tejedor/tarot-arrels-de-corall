@@ -543,7 +543,7 @@ function orbesInit() {
    porque algunos navegadores cortan los textos largos. */
 const voice = {
   supported: typeof window !== 'undefined' && 'speechSynthesis' in window && typeof window.SpeechSynthesisUtterance === 'function',
-  speaking: false, btn: null, voices: [], session: 0, ducked: false
+  speaking: false, btn: null, voices: [], session: 0
 };
 
 function voiceLoad() {
@@ -591,19 +591,6 @@ function voiceChunks(text) {
   return out.filter(Boolean);
 }
 
-/* Baja la música mientras habla y la devuelve a su volumen al terminar. */
-function voiceMusicDuck() {
-  if (typeof musicFadeTo !== 'function' || !music.el || music.el.paused || !music.on) return;
-  voice.ducked = true;
-  musicFadeTo(0.07, 400);
-}
-function voiceMusicRestore() {
-  if (!voice.ducked) return;
-  voice.ducked = false;
-  if (typeof musicFadeTo !== 'function' || !music.el || music.el.paused || !music.on) return;
-  musicFadeTo(MUSIC_VOL, 1200);
-}
-
 const VOICE_ICON_LISTEN = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5h3.5L12 6v12l-4.5-3.5H4z"/><path d="M15.5 9a4 4 0 0 1 0 6"/><path d="M18 6.5a8 8 0 0 1 0 11"/></svg>';
 const VOICE_ICON_STOP = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5h3.5L12 6v12l-4.5-3.5H4z"/><rect x="15" y="9" width="6" height="6" rx="1" fill="currentColor" stroke="none"/></svg>';
 
@@ -628,7 +615,6 @@ function voiceStop() {
   if (voice.supported) { try { window.speechSynthesis.cancel(); } catch (e) { /* sin voz */ } }
   voice.speaking = false;
   voicePaintOne(old);
-  voiceMusicRestore();
 }
 
 function voiceSpeak(text, btn) {
@@ -640,10 +626,9 @@ function voiceSpeak(text, btn) {
   const session = ++voice.session;
   voice.speaking = true;
   voicePaintBtn();
-  voiceMusicDuck();
   const v = voicePick();
   let i = 0;
-  const finish = () => { if (session !== voice.session) return; voice.speaking = false; voicePaintBtn(); voiceMusicRestore(); };
+  const finish = () => { if (session !== voice.session) return; voice.speaking = false; voicePaintBtn(); };
   const next = () => {
     if (session !== voice.session) return;
     if (i >= chunks.length) { finish(); return; }
