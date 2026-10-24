@@ -488,7 +488,7 @@ async function orbesSend() {
     const ans = el('div', 'synthesis orbes__answer');
     const head = el('div', 'orbes__head');
     head.appendChild(el('h2', 'synthesis__title', 'Respuesta de los orbes'));
-    if (voice.supported && voicePick()) head.appendChild(voiceMakeBtn());
+    if (voice.supported && voicePick()) head.appendChild(voiceMakeBtn(() => orbes.lastText, 'Escuchar el vaticinio de los orbes', 'orbes__voice'));
     ans.appendChild(head);
     const body = el('div', 'synthesis__text');
     text.split(/\n+/).filter(Boolean).forEach(p => body.appendChild(el('p', null, p)));
@@ -607,21 +607,27 @@ function voiceMusicRestore() {
 const VOICE_ICON_LISTEN = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5h3.5L12 6v12l-4.5-3.5H4z"/><path d="M15.5 9a4 4 0 0 1 0 6"/><path d="M18 6.5a8 8 0 0 1 0 11"/></svg>';
 const VOICE_ICON_STOP = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5h3.5L12 6v12l-4.5-3.5H4z"/><rect x="15" y="9" width="6" height="6" rx="1" fill="currentColor" stroke="none"/></svg>';
 
-function voicePaintBtn() {
-  const b = voice.btn;
+function voicePaintOne(b) {
   if (!b) return;
-  b.innerHTML = voice.speaking ? VOICE_ICON_STOP : VOICE_ICON_LISTEN;
-  b.setAttribute('aria-pressed', String(voice.speaking));
-  const label = voice.speaking ? 'Detener la lectura en voz alta' : 'Escuchar el vaticinio de los orbes';
+  const active = voice.speaking && voice.btn === b;
+  b.innerHTML = active ? VOICE_ICON_STOP : VOICE_ICON_LISTEN;
+  b.setAttribute('aria-pressed', String(active));
+  const label = active ? 'Detener la lectura en voz alta' : (b.dataset.labelListen || 'Escuchar la lectura en voz alta');
   b.setAttribute('aria-label', label);
   b.title = label;
 }
 
+function voicePaintBtn() {
+  voicePaintOne(voice.btn);
+}
+
 function voiceStop() {
   voice.session++;
+  const old = voice.btn;
   voice.btn = null;
   if (voice.supported) { try { window.speechSynthesis.cancel(); } catch (e) { /* sin voz */ } }
   voice.speaking = false;
+  voicePaintOne(old);
   voiceMusicRestore();
 }
 
@@ -654,17 +660,15 @@ function voiceSpeak(text, btn) {
 }
 
 /* Botón redondo de solo icono, como los de sonido y música, junto al título. */
-function voiceMakeBtn() {
-  const b = el('button', 'sound orbes__voice');
+function voiceMakeBtn(getText, listenLabel, cssClass) {
+  const b = el('button', 'sound ' + (cssClass || 'orbes__voice'));
   b.type = 'button';
-  b.id = 'orbes-voice';
+  b.dataset.labelListen = listenLabel;
   b.addEventListener('click', () => {
-    if (voice.speaking) { voiceStop(); voice.btn = b; voicePaintBtn(); }
-    else voiceSpeak(orbes.lastText, b);
+    if (voice.speaking && voice.btn === b) { voiceStop(); }
+    else voiceSpeak(typeof getText === 'function' ? getText() : getText, b);
   });
-  voice.btn = b;
-  voice.speaking = false;
-  voicePaintBtn();
+  voicePaintOne(b);
   return b;
 }
 
@@ -1058,6 +1062,11 @@ async function finishReading() {
   const box = $('#synthesis-text');
   box.innerHTML = '';
   result.paragraphs.forEach(p => box.appendChild(el('p', null, p)));
+  const sh = $('#synthesis-head');
+  if (sh) {
+    sh.querySelectorAll('.synthesis__voice').forEach(n => n.remove());
+    if (voice.supported && voicePick()) sh.appendChild(voiceMakeBtn(() => (state.paragraphs || []).join('\n\n'), 'Escuchar la lectura en voz alta', 'synthesis__voice'));
+  }
   $('#synthesis').hidden = false;
   $('#reset').hidden = false;
   orbesOffer(ctx);
