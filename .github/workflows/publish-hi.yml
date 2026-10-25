@@ -21,6 +21,8 @@ jobs:
           set -e
           cd assets/cards
           sha256sum -c ../../hi-src/sha256sums.txt
+      - name: Install Pillow
+        run: python3 -m pip install --quiet Pillow
       - name: Verify dimensions 1000x1500 and full decodability
         run: |
           set -e
