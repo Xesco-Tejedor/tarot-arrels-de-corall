@@ -220,7 +220,7 @@ const DEFAULT_SPREAD = 'three';
    Con url vacía la web es 100% offline y no se muestra la opción. */
 const ORBES_CONFIG = {
   url: 'https://tarot-orbes.francesc-adria-perello.workers.dev',
-  service: 'DeepSeek, un modelo de IA que se ejecuta en Cloudflare a través del servidor de esta web',
+  service: 'Mistral, un modelo de IA que se ejecuta en Cloudflare a través del servidor de esta web',
   privacy: 'Cloudflare procesa la consulta al momento, sin guardarla ni usarla para entrenar modelos'
 };
 
