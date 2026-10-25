@@ -1,0 +1,30 @@
+name: restore-cards
+on:
+  push:
+    paths: ['.github/workflows/restore.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore 600x900 cards from b38b8e73ce
+        run: |
+          set -e
+          cd assets/cards
+          for f in 00-ou-dalabastre.webp 01-mans-de-fusta.webp 02-costurera-nocturna.webp 03-el-cant-de-locell.webp 04-el-guardia-dels-ocells.webp 05-el-bec-de-la-clau.webp 06-niu-de-fils.webp 07-el-carro-de-petxina.webp 08-branca-de-corall.webp 09-estel-de-la-foscor.webp 10-la-filadora-de-cabell.webp 11-el-sospir-de-pedra.webp 12-la-pedra-que-somia.webp 13-lou-trencat.webp 14-fil-de-plata.webp 15-collar-de-becs.webp 16-la-torre-esquerdata.webp 17-nit-de-plata.webp 18-plomes-de-lluna.webp 19-sol-dor-vell.webp 20-la-crida-dels-ocells.webp 21-arrels-de-corall.webp back.webp; do
+            curl -fsSL "https://raw.githubusercontent.com/Xesco-Tejedor/tarot-arrels-de-corall/b38b8e73ce09c56c67847e26cc2b5df06cef9343/assets/cards/$f" -o "$f"
+          done
+      - name: Verify and commit
+        run: |
+          set -e
+          cd assets/cards
+          for f in *.webp; do s=$(stat -c%s "$f"); echo "$f $s"; test "$s" -gt 10000; done
+          cd ../..
+          git config user.name "Xesco-Tejedor"
+          git config user.email "Xesco-Tejedor@users.noreply.github.com"
+          git add assets/cards
+          git diff --cached --quiet && echo "nothing to change" || (git commit -m "Restaurar naipes 600x900 (revert subida fallida 56ab0e6)" && git push)
+
